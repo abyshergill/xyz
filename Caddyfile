@@ -1,0 +1,59 @@
+# Caddyfile for YourTrolley (Multi-Store Food Stall Management Platform).
+#
+# This file is written for the Docker Compose stack in docker-compose.yml,
+# where Caddy, the Django app, and PostgreSQL run as separate containers on
+# the same Docker network -- Caddy reaches Django by its service name
+# ("app"), not by IP or localhost. Caddy automatically provisions and
+# renews HTTPS certificates via Let's Encrypt for the domain below, as
+# long as your DNS A/AAAA records already point at this server and ports
+# 80 and 443 are reachable from the internet.
+#
+# Replace "yourtrolley.example.com" with your real domain before deploying.
+
+yourtrolley.in, www.yourtrolley.in{
+    encode zstd gzip
+
+    # Security headers (defence-in-depth alongside Django's own security
+    # middleware -- see SECURE_* settings in config/settings.py).
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "same-origin"
+        -Server
+    }
+
+    # Serve collected static files directly from the shared Docker volume
+    # (fast path, no need to round-trip through Django/Gunicorn for CSS/JS).
+    handle_path /static/* {
+        root * /srv/static
+        file_server
+    }
+
+    # Serve user-uploaded media (store pictures, food item images, QR
+    # codes) directly from the shared Docker volume.
+    handle_path /media/* {
+        root * /srv/media
+        file_server
+    }
+
+    # Everything else is proxied to the Django app container, which runs
+    # Gunicorn internally on port 8000 (see Dockerfile CMD).
+    reverse_proxy app:8000 {
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Real-IP {remote_host}
+    }
+
+    log {
+        output file /var/log/caddy/yourtrolley_access.log
+        format json
+    }
+}
+
+# --- Running WITHOUT Docker? -------------------------------------------
+# If you're running Caddy directly on the host (not via docker-compose),
+# replace "reverse_proxy app:8000" above with "reverse_proxy 127.0.0.1:8000"
+# and point the two `root` directives at wherever you ran `collectstatic`
+# and configured MEDIA_ROOT on that host instead of /srv/static and
+# /srv/media, then run Gunicorn yourself:
+#   gunicorn config.wsgi:application --bind 127.0.0.1:8000 --workers 3

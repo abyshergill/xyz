@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% load currency_tags %}
+{% block title %}My Store{% endblock %}
+{% block content %}
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
+  <h1 class="text-2xl font-bold">{{ store.name }}</h1>
+  <div class="flex gap-2 flex-wrap">
+    <a href="{% url 'stores:edit_store' store.slug %}" class="btn btn-secondary">Edit Store</a>
+    <a href="{% url 'stores:edit_operating_hours' store.slug %}" class="btn btn-secondary">Hours</a>
+    <a href="{% url 'stores:category_list' store.slug %}" class="btn btn-secondary">Categories</a>
+    <a href="{% url 'stores:item_list' store.slug %}" class="btn btn-secondary">Menu Items</a>
+    <a href="{% url 'orders:order_list' %}" class="btn btn-secondary">Orders</a>
+    <a href="{% url 'analytics:owner_dashboard' %}" class="btn btn-secondary">Analytics</a>
+    <form method="post" action="{% url 'stores:toggle_store_active' store.slug %}">
+      {% csrf_token %}
+      <button type="submit" class="btn {% if store.is_active %}btn-danger{% endif %}">
+        {% if store.is_active %}Deactivate{% else %}Activate{% endif %}
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+  <div class="card text-center">
+    <p class="text-sm text-gray-500">Status</p>
+    <p class="text-lg font-bold {% if store_is_open %}text-green-600{% else %}text-red-500{% endif %}">
+      {% if store_is_open %}Open{% else %}Closed{% endif %}
+    </p>
+  </div>
+  <div class="card text-center">
+    <p class="text-sm text-gray-500">Low Stock Items</p>
+    <p class="text-lg font-bold">{{ low_stock_items.count }}</p>
+  </div>
+  <div class="card text-center">
+    <p class="text-sm text-gray-500">QR Code</p>
+    {% if store.qr_code %}<img src="{{ store.qr_code.url }}" class="w-16 h-16 mx-auto">{% endif %}
+  </div>
+</div>
+
+<h2 class="text-xl font-semibold mb-3">Recent Orders</h2>
+<div class="card overflow-x-auto">
+<table class="w-full text-sm">
+  <thead><tr class="text-left border-b"><th class="py-2">Order #</th><th>Status</th><th>Total</th><th>Placed</th></tr></thead>
+  <tbody>
+  {% for order in recent_orders %}
+    <tr class="border-b">
+      <td class="py-2"><a href="{% url 'orders:order_detail' order.order_number %}" class="text-orange-600 underline">{{ order.order_number }}</a></td>
+      <td>{{ order.get_status_display }}</td>
+      <td>{% currency store order.grand_total %}</td>
+      <td>{{ order.created_at|date:"M d, H:i" }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="4" class="py-2 text-gray-500">No orders yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

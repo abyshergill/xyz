@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Operating Hours{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto card">
+  <h1 class="text-xl font-bold mb-4">Operating Hours &mdash; {{ store.name }}</h1>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ formset.management_form }}
+    <p class="text-sm text-gray-500 mb-3">Set your opening and closing time for each day, or check "Closed all day" for days you don't operate.</p>
+    <div class="space-y-3">
+      {% for hform in formset %}
+        <div class="border rounded p-3 grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
+          {{ hform.id }}
+          <div><label class="block text-xs font-semibold">{{ hform.instance.get_day_display }}</label></div>
+          <div><label class="block text-xs">Opens</label>{{ hform.opening_time }}</div>
+          <div><label class="block text-xs">Closes</label>{{ hform.closing_time }}</div>
+          <div class="flex items-center gap-1"><label class="text-xs">{{ hform.is_closed }} Closed all day</label></div>
+        </div>
+        {% for error in hform.non_field_errors %}<p class="text-red-600 text-xs">{{ error }}</p>{% endfor %}
+      {% endfor %}
+    </div>
+    <button type="submit" class="btn mt-4 w-full">Save Hours</button>
+  </form>
+</div>
+{% endblock %}

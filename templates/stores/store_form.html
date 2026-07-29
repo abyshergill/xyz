@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{% if is_create %}Create Store{% else %}Edit Store{% endif %}{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto card">
+  <h1 class="text-xl font-bold mb-4">{% if is_create %}Create Your Store{% else %}Edit Store{% endif %}</h1>
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="mb-3">
+        {% if field.field.widget.input_type == "checkbox" %}
+          <label class="inline-flex items-center gap-2">{{ field }} {{ field.label }}</label>
+        {% else %}
+          <label class="block text-sm font-medium mb-1">{{ field.label }}</label>
+          {{ field }}
+        {% endif %}
+        {% if field.help_text %}<p class="text-xs text-gray-500 mt-1">{{ field.help_text }}</p>{% endif %}
+        {% for error in field.errors %}<p class="text-red-600 text-xs">{{ error }}</p>{% endfor %}
+      </div>
+    {% endfor %}
+    <p class="text-xs text-gray-500 -mt-2 mb-3">Custom symbol / icon fields only apply when Currency is set to "Custom".</p>
+    <button type="submit" class="btn w-full">Save Store</button>
+  </form>
+</div>
+{% endblock %}

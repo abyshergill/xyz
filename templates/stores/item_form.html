@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{% if is_create %}Add Item{% else %}Edit Item{% endif %}{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto card">
+  <h1 class="text-xl font-bold mb-4">{% if is_create %}Add Menu Item{% else %}Edit Menu Item{% endif %}</h1>
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="mb-3">
+        {% if field.field.widget.input_type == "checkbox" %}
+          <label class="inline-flex items-center gap-2">{{ field }} {{ field.label }}</label>
+        {% else %}
+          <label class="block text-sm font-medium mb-1">{{ field.label }}</label>
+          {{ field }}
+        {% endif %}
+        {% for error in field.errors %}<p class="text-red-600 text-xs">{{ error }}</p>{% endfor %}
+      </div>
+    {% endfor %}
+    <button type="submit" class="btn w-full">Save Item</button>
+  </form>
+</div>
+{% endblock %}

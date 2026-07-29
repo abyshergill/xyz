@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load currency_tags %}
+{% block title %}Order {{ order.order_number }}{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center flex-wrap gap-2 mb-4">
+  <h1 class="text-xl font-bold">Order {{ order.order_number }}</h1>
+  <a href="{% url 'orders:order_bill' order.order_number %}" class="btn btn-secondary">Download Bill (PDF)</a>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+  <div class="card">
+    <p><span class="text-gray-500">Status:</span> <span class="font-semibold">{{ order.get_status_display }}</span></p>
+    <p><span class="text-gray-500">Table:</span> {{ order.table_number|default:"—" }}</p>
+    <p><span class="text-gray-500">Phone:</span> {{ order.contact_phone|default:"—" }}</p>
+    <p><span class="text-gray-500">Email:</span> {{ order.contact_email|default:"—" }}</p>
+  </div>
+  <div class="card">
+    <p><span class="text-gray-500">Subtotal:</span> {% currency order.store order.subtotal %}</p>
+    <p><span class="text-gray-500">Tax:</span> {% currency order.store order.tax_total %}</p>
+    <p class="font-bold"><span class="text-gray-500 font-normal">Grand Total:</span> {% currency order.store order.grand_total %}</p>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <h2 class="font-semibold mb-2">Update Status</h2>
+  <div class="flex flex-wrap gap-2 mb-3">
+    {% if order.status == "PENDING" %}
+      <form method="post" action="{% url 'orders:order_update_status' order.order_number %}">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="CONFIRMED">
+        <button type="submit" class="btn">✅ Confirm Order Received</button>
+      </form>
+    {% endif %}
+  </div>
+  <form method="post" action="{% url 'orders:order_update_status' order.order_number %}" class="flex gap-2 items-center flex-wrap">
+    {% csrf_token %}
+    <select name="status">
+      {% for value, label in order.Status.choices %}
+        <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-secondary">Set Status</button>
+  </form>
+</div>
+
+<h2 class="font-semibold mb-2">Items</h2>
+<div class="card mb-4">
+  <ul class="divide-y text-sm">
+    {% for item in order.items.all %}
+      <li class="py-1 flex justify-between"><span>{{ item.quantity }} &times; {{ item.item_name_snapshot }}</span><span>{% currency order.store item.line_total %}</span></li>
+    {% endfor %}
+  </ul>
+</div>
+
+{% if child_orders %}
+<h2 class="font-semibold mb-2">Merged Orders (this is a master ticket)</h2>
+<div class="card mb-4">
+  <ul class="divide-y text-sm">
+    {% for child in child_orders %}
+      <li class="py-2">
+        <a href="{% url 'orders:order_detail' child.order_number %}" class="text-orange-600 underline">{{ child.order_number }}</a>
+        {% for item in child.items.all %}
+          <div class="pl-4 text-gray-500">{{ item.quantity }} &times; {{ item.item_name_snapshot }} — {% currency order.store item.line_total %}</div>
+        {% endfor %}
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<form method="post" action="{% url 'orders:order_delete' order.order_number %}" onsubmit="return confirm('Delete this order permanently?');">
+  {% csrf_token %}<button type="submit" class="btn-danger">Delete Order</button>
+</form>
+{% endblock %}

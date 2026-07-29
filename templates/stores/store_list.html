@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Browse Food Stalls{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Browse Food Stalls</h1>
+<form method="get" class="mb-6 flex gap-2">
+  <input type="text" name="q" value="{{ query }}" placeholder="Search stalls..." class="max-w-xs">
+  <button type="submit" class="btn">Search</button>
+</form>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  {% for store in page_obj %}
+    <a href="{% url 'stores:store_detail' store.slug %}" class="card hover:shadow-lg transition block">
+      {% if store.store_picture %}
+        <img src="{{ store.store_picture.url }}" alt="{{ store.name }}" class="w-full h-40 object-cover rounded mb-3">
+      {% else %}
+        <div class="w-full h-40 bg-orange-100 rounded mb-3 flex items-center justify-center text-4xl">🍽️</div>
+      {% endif %}
+      <h2 class="font-semibold text-lg">{{ store.name }}</h2>
+      <p class="text-sm text-gray-500 truncate">{{ store.address }}</p>
+      <p class="text-xs mt-1 {% if store.is_open_now %}text-green-600{% else %}text-red-500{% endif %}">
+        {% if store.is_open_now %}Open now{% else %}Closed{% endif %}
+      </p>
+    </a>
+  {% empty %}
+    <p class="text-gray-500">No stalls found.</p>
+  {% endfor %}
+</div>
+
+<div class="mt-6 flex gap-2 justify-center">
+  {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&q={{ query }}" class="btn btn-secondary">Prev</a>{% endif %}
+  {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&q={{ query }}" class="btn btn-secondary">Next</a>{% endif %}
+</div>
+{% endblock %}

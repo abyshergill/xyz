@@ -1,0 +1,64 @@
+/* Plain CSS additions (kept separate from Tailwind's Play CDN, which only
+   JIT-compiles class names found directly in HTML, not in external files
+   using @apply). Templates use Tailwind utility classes directly. */
+
+.card {
+  background: #fff;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  padding: 1rem;
+}
+
+input[type="text"], input[type="email"], input[type="password"], input[type="number"],
+input[type="tel"], input[type="time"], textarea, select {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.25rem;
+}
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #fb923c;
+}
+
+/* Button classes -- plain CSS (not @apply, since Tailwind's Play CDN only
+   JIT-compiles classes found directly in HTML, not inside external .css
+   files, so @apply here would silently produce nothing). */
+.btn {
+  display: inline-block;
+  background-color: #ea580c;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  text-decoration: none;
+  text-align: center;
+  transition: background-color 0.15s ease;
+}
+.btn:hover {
+  background-color: #c2410c;
+  color: #fff;
+}
+.btn-secondary {
+  background-color: #e5e7eb;
+  color: #1f2937;
+}
+.btn-secondary:hover {
+  background-color: #d1d5db;
+  color: #1f2937;
+}
+.btn-danger {
+  background-color: #dc2626;
+  color: #fff;
+}
+.btn-danger:hover {
+  background-color: #b91c1c;
+  color: #fff;
+}
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

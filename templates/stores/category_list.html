@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Categories{% endblock %}
+{% block content %}
+<h1 class="text-xl font-bold mb-4">Categories &mdash; {{ store.name }}</h1>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+  <div class="card">
+    <h2 class="font-semibold mb-2">Add Category</h2>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="mb-2">
+          <label class="block text-sm font-medium mb-1">{{ field.label }}</label>
+          {{ field }}
+          {% for error in field.errors %}<p class="text-red-600 text-xs">{{ error }}</p>{% endfor %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn">Add</button>
+    </form>
+  </div>
+  <div class="card">
+    <h2 class="font-semibold mb-2">Existing Categories</h2>
+    <ul class="divide-y">
+      {% for category in categories %}
+        <li class="py-2 flex justify-between items-center">
+          <span>{{ category.name }}</span>
+          <form method="post" action="{% url 'stores:category_delete' store.slug category.pk %}"
+                onsubmit="return confirm('Delete this category?');">
+            {% csrf_token %}
+            <button type="submit" class="btn-danger text-xs px-2 py-1">Delete</button>
+          </form>
+        </li>
+      {% empty %}
+        <li class="py-2 text-gray-500">No categories yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

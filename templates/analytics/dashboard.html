@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load currency_tags %}
+{% block title %}Analytics{% endblock %}
+{% block content %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+
+<div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+  <h1 class="text-xl font-bold">Sales Analytics &mdash; {{ store.name }}</h1>
+  <form method="get" class="flex gap-2">
+    <select name="period" onchange="this.form.submit()">
+      <option value="daily" {% if period == "daily" %}selected{% endif %}>Daily</option>
+      <option value="weekly" {% if period == "weekly" %}selected{% endif %}>Weekly</option>
+      <option value="monthly" {% if period == "monthly" %}selected{% endif %}>Monthly</option>
+    </select>
+  </form>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+  <div class="card text-center">
+    <p class="text-sm text-gray-500">Total Revenue (period)</p>
+    <p class="text-2xl font-bold">{% currency store summary.total_revenue|default:0 %}</p>
+  </div>
+  <div class="card text-center">
+    <p class="text-sm text-gray-500">Completed Orders</p>
+    <p class="text-2xl font-bold">{{ summary.total_orders|default:0 }}</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+  <div class="card">
+    <h2 class="font-semibold mb-2">Sales Over Time</h2>
+    <canvas id="salesOverTimeChart"></canvas>
+  </div>
+  <div class="card">
+    <h2 class="font-semibold mb-2">Category-wise Sales</h2>
+    <canvas id="categorySalesChart"></canvas>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <h2 class="font-semibold mb-2">Item-wise Sales</h2>
+  <canvas id="itemSalesChart"></canvas>
+</div>
+
+<div class="card overflow-x-auto">
+  <h2 class="font-semibold mb-2">Top Items</h2>
+  <table class="w-full text-sm">
+    <thead><tr class="text-left border-b"><th class="py-2">Item</th><th>Qty Sold</th><th>Revenue</th></tr></thead>
+    <tbody>
+    {% for row in item_sales %}
+      <tr class="border-b">
+        <td class="py-2">{{ row.item_name_snapshot }}</td>
+        <td>{{ row.quantity_sold }}</td>
+        <td>{% currency store row.revenue %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="3" class="py-2 text-gray-500">No completed sales in this period yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+  // chart_data_json is produced server-side via json.dumps() of ORM-aggregated
+  // (never raw-SQL) numbers -- see analytics/views.py. Django's template
+  // auto-escaping is bypassed intentionally here only for a json.dumps
+  // payload of numeric/label data, which is safe because it never embeds
+  // unescaped user-controlled HTML into the DOM (Chart.js renders to canvas).
+  const chartData = JSON.parse('{{ chart_data_json|escapejs }}');
+
+  new Chart(document.getElementById('salesOverTimeChart'), {
+    type: 'line',
+    data: { labels: chartData.sales_over_time.labels, datasets: [{ label: 'Revenue', data: chartData.sales_over_time.data, borderColor: '#ea580c', backgroundColor: 'rgba(234,88,12,0.1)', tension: 0.3 }] },
+  });
+  new Chart(document.getElementById('itemSalesChart'), {
+    type: 'bar',
+    data: { labels: chartData.item_sales.labels, datasets: [{ label: 'Revenue by Item', data: chartData.item_sales.data, backgroundColor: '#fb923c' }] },
+  });
+  new Chart(document.getElementById('categorySalesChart'), {
+    type: 'doughnut',
+    data: { labels: chartData.category_sales.labels, datasets: [{ data: chartData.category_sales.data, backgroundColor: ['#ea580c','#fb923c','#fdba74','#fed7aa','#9a3412','#c2410c'] }] },
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load currency_tags %}
+{% block title %}Menu Items{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-4">
+  <h1 class="text-xl font-bold">Menu Items &mdash; {{ store.name }}</h1>
+  <a href="{% url 'stores:item_create' store.slug %}" class="btn">+ Add Item</a>
+</div>
+<div class="card overflow-x-auto">
+<table class="w-full text-sm">
+  <thead><tr class="text-left border-b">
+    <th class="py-2">Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Available</th><th></th>
+  </tr></thead>
+  <tbody>
+  {% for item in items %}
+    <tr class="border-b">
+      <td class="py-2">{{ item.name }}</td>
+      <td>{{ item.category.name|default:"—" }}</td>
+      <td>{% currency store item.price %}</td>
+      <td>{{ item.stock_quantity }}</td>
+      <td>{% if item.is_available %}Yes{% else %}No{% endif %}</td>
+      <td class="flex gap-2 py-2">
+        <a href="{% url 'stores:item_edit' store.slug item.pk %}" class="text-orange-600 underline">Edit</a>
+        <form method="post" action="{% url 'stores:item_delete' store.slug item.pk %}" onsubmit="return confirm('Delete this item?');">
+          {% csrf_token %}<button type="submit" class="text-red-600 underline">Delete</button>
+        </form>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6" class="py-2 text-gray-500">No items yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

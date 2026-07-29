@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Bad Request{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto card text-center py-10">
+  <p class="text-6xl mb-4">⚠️</p>
+  <h1 class="text-3xl font-bold mb-2">400 &mdash; Bad Request</h1>
+  <p class="text-gray-600 mb-6">
+    We couldn't process that request. Please go back and try again.
+  </p>
+  <a href="{% url 'stores:store_list' %}" class="btn">Browse Food Stalls</a>
+</div>
+{% endblock %}

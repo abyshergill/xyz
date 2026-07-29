@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Register Your Stall{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto card">
+  <h1 class="text-xl font-bold mb-4">Register Your Food Stall</h1>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="mb-3">
+        <label class="block text-sm font-medium mb-1">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+        {{ field }}
+        {% for error in field.errors %}<p class="text-red-600 text-xs">{{ error }}</p>{% endfor %}
+      </div>
+    {% endfor %}
+    <button type="submit" class="btn w-full">Create Owner Account</button>
+  </form>
+</div>
+{% endblock %}

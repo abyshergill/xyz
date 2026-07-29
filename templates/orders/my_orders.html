@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load currency_tags %}
+{% block title %}My Orders{% endblock %}
+{% block content %}
+<h1 class="text-xl font-bold mb-4">My Orders</h1>
+<div class="card overflow-x-auto">
+<table class="w-full text-sm">
+  <thead><tr class="text-left border-b"><th class="py-2">Order #</th><th>Store</th><th>Status</th><th>Total</th><th>Placed</th><th></th></tr></thead>
+  <tbody>
+  {% for order in orders %}
+    <tr class="border-b">
+      <td class="py-2">{{ order.order_number }}</td>
+      <td>{{ order.store.name }}</td>
+      <td>{{ order.get_status_display }}</td>
+      <td>{% currency order.store order.grand_total %}</td>
+      <td>{{ order.created_at|date:"M d, H:i" }}</td>
+      <td><a href="{% url 'orders:order_bill' order.order_number %}" class="text-orange-600 underline">Bill</a></td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6" class="py-2 text-gray-500">You haven't placed any orders yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load currency_tags %}
+{% block title %}{{ store.name }}{% endblock %}
+{% block content %}
+<div class="card mb-6 flex flex-col sm:flex-row gap-4">
+  {% if store.store_picture %}
+    <img src="{{ store.store_picture.url }}" alt="{{ store.name }}" class="w-full sm:w-48 h-40 object-cover rounded">
+  {% endif %}
+  <div class="flex-1">
+    <h1 class="text-2xl font-bold">{{ store.name }}</h1>
+    <p class="text-gray-600">{{ store.description }}</p>
+    <p class="text-sm text-gray-500 mt-1">{{ store.address }} &middot; {{ store.phone_number }}</p>
+    <p class="mt-2 text-sm font-medium {% if store_is_open %}text-green-600{% else %}text-red-500{% endif %}">
+      {% if store_is_open %}● Open now{% else %}● Closed{% endif %}
+    </p>
+  </div>
+  {% if store.qr_code %}
+    <div class="text-center">
+      <img src="{{ store.qr_code.url }}" alt="QR code" class="w-24 h-24 mx-auto">
+      <p class="text-xs text-gray-400">Scan to reorder</p>
+    </div>
+  {% endif %}
+</div>
+
+{% if not store_is_open %}
+  <div class="bg-yellow-50 border border-yellow-300 text-yellow-800 rounded p-3 mb-4 text-sm">
+    This stall is currently closed. You can browse the menu but cannot place an order right now.
+  </div>
+{% endif %}
+
+{% for category in categories %}
+  <h2 class="text-xl font-semibold mt-6 mb-3">{{ category.name }}</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for item in category.items.all %}
+      {% if item.is_available %}
+      <div class="card flex flex-col">
+        {% if item.image %}
+          <img src="{{ item.image.url }}" alt="{{ item.name }}" class="w-full h-32 object-cover rounded mb-2">
+        {% endif %}
+        <h3 class="font-semibold">{{ item.name }}</h3>
+        <p class="text-sm text-gray-500 flex-1">{{ item.description }}</p>
+        <p class="font-bold mt-1">{% currency store item.price %}</p>
+        {% if item.in_stock %}
+          <form method="post" action="{% url 'orders:add_to_cart' store.slug %}" class="mt-2 flex gap-2 items-center">
+            {% csrf_token %}
+            <input type="hidden" name="food_item_id" value="{{ item.pk }}">
+            <input type="number" name="quantity" value="1" min="1" max="99" class="w-16">
+            <button type="submit" class="btn{% if not store_is_open %} opacity-50 cursor-not-allowed{% endif %}" {% if not store_is_open %}disabled{% endif %}>Add</button>
+          </form>
+        {% else %}
+          <p class="text-xs text-red-500 mt-2">Out of stock</p>
+        {% endif %}
+      </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+{% empty %}
+  <p class="text-gray-500">This store hasn't added any menu items yet.</p>
+{% endfor %}
+
+<div class="mt-8 text-center">
+  <a href="{% url 'orders:checkout' store.slug %}" class="btn">
+    Go to Checkout{% if cart_item_count %} ({{ cart_item_count }} item{{ cart_item_count|pluralize }}){% endif %}
+  </a>
+</div>
+{% endblock %}

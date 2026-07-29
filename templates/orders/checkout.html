@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load currency_tags %}
+{% block title %}Checkout{% endblock %}
+{% block content %}
+<h1 class="text-xl font-bold mb-4">Checkout &mdash; {{ store.name }}</h1>
+
+<div class="card mb-4">
+  <h2 class="font-semibold mb-3">Your Cart</h2>
+  <div class="divide-y">
+    {% for line in cart_lines %}
+      <div class="py-3 flex items-center gap-3">
+        {% if line.item.image %}
+          <img src="{{ line.item.image.url }}" alt="{{ line.item.name }}" class="w-16 h-16 object-cover rounded flex-shrink-0">
+        {% else %}
+          <div class="w-16 h-16 bg-orange-100 rounded flex items-center justify-center text-2xl flex-shrink-0">🍽️</div>
+        {% endif %}
+        <div class="flex-1 min-w-0">
+          <p class="font-medium truncate">{{ line.item.name }}</p>
+          <p class="text-sm text-gray-500">{{ line.quantity }} &times; {% currency store line.item.price %}</p>
+        </div>
+        <p class="font-semibold whitespace-nowrap">{% currency store line.line_total %}</p>
+        <form method="post" action="{% url 'orders:remove_from_cart' store.slug %}">
+          {% csrf_token %}
+          <input type="hidden" name="food_item_id" value="{{ line.item.pk }}">
+          <button type="submit" class="btn-danger text-xs px-2 py-1" title="Remove">Remove</button>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="border-t mt-3 pt-3 text-sm space-y-1">
+    <div class="flex justify-between"><span class="text-gray-500">Subtotal</span><span>{% currency store subtotal %}</span></div>
+    {% if tax_total %}
+      <div class="flex justify-between"><span class="text-gray-500">Estimated tax</span><span>{% currency store tax_total %}</span></div>
+    {% endif %}
+    <div class="flex justify-between font-bold text-base"><span>Estimated Total</span><span>{% currency store estimated_total %}</span></div>
+  </div>
+</div>
+
+<form method="post" class="card max-w-md">
+  {% csrf_token %}
+  {% for field in form %}
+    {% if field.is_hidden %}
+      {{ field }}
+    {% else %}
+      <div class="mb-3">
+        <label class="block text-sm font-medium mb-1">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+        {{ field }}
+        {% for error in field.errors %}<p class="text-red-600 text-xs">{{ error }}</p>{% endfor %}
+      </div>
+    {% endif %}
+  {% endfor %}
+  <button type="submit" class="btn w-full">Place Order</button>
+</form>
+{% endblock %}

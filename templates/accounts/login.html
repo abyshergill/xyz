@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto card">
+  <h1 class="text-xl font-bold mb-4">Log In</h1>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="text-red-600 text-sm mb-2">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <label class="block text-sm font-medium mb-1">Username</label>
+    {{ form.username }}
+    <label class="block text-sm font-medium mb-1">Password</label>
+    {{ form.password }}
+    <button type="submit" class="btn mt-3 w-full">Log In</button>
+  </form>
+  <p class="text-sm mt-4">No account? <a class="text-orange-600 underline" href="{% url 'accounts:register_customer' %}">Sign up as a customer</a>
+    or <a class="text-orange-600 underline" href="{% url 'accounts:register_owner' %}">register your food stall</a>.</p>
+</div>
+{% endblock %}

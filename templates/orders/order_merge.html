@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Merge Orders{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto card">
+  <h1 class="text-xl font-bold mb-4">Merge Orders &mdash; {{ store.name }}</h1>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% for error in form.orders_to_merge.errors %}<p class="text-red-600 text-xs">{{ error }}</p>{% endfor %}
+    <div class="space-y-2 mb-4">
+      {% for checkbox in form.orders_to_merge %}
+        <label class="flex items-center gap-2 border rounded p-2">
+          {{ checkbox.tag }}
+          {{ checkbox.choice_label }}
+        </label>
+      {% endfor %}
+    </div>
+    <button type="submit" class="btn w-full">Merge Selected Orders</button>
+  </form>
+</div>
+{% endblock %}

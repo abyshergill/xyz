@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+db.sqlite3
+.env
+.git/
+.gitignore
+venv/
+env/
+*.egg-info/
+media/*
+!media/.gitkeep
+staticfiles/
+logs/*.log
+.pytest_cache/
+*.md

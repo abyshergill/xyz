@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Platform Admin{% endblock %}
+{% block content %}
+<h1 class="text-xl font-bold mb-4">Platform Admin Dashboard</h1>
+<div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
+  <div class="card text-center"><p class="text-sm text-gray-500">Total Stores</p><p class="text-2xl font-bold">{{ total_stores }}</p></div>
+  <div class="card text-center"><p class="text-sm text-gray-500">Active Stores</p><p class="text-2xl font-bold">{{ active_stores }}</p></div>
+  <div class="card text-center"><p class="text-sm text-gray-500">Customers</p><p class="text-2xl font-bold">{{ total_customers }}</p></div>
+  <div class="card text-center"><p class="text-sm text-gray-500">Owners</p><p class="text-2xl font-bold">{{ total_owners }}</p></div>
+  <div class="card text-center"><p class="text-sm text-gray-500">Total Orders</p><p class="text-2xl font-bold">{{ total_orders }}</p></div>
+</div>
+
+<h2 class="font-semibold mb-2">Recently Registered Stores</h2>
+<div class="card overflow-x-auto">
+<table class="w-full text-sm">
+  <thead><tr class="text-left border-b"><th class="py-2">Store</th><th>Owner</th><th>Active</th><th>Created</th></tr></thead>
+  <tbody>
+  {% for store in recent_stores %}
+    <tr class="border-b">
+      <td class="py-2">{{ store.name }}</td>
+      <td>{{ store.owner.username }}</td>
+      <td>{% if store.is_active %}Yes{% else %}No{% endif %}</td>
+      <td>{{ store.created_at|date:"M d, Y" }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="text-sm text-gray-500 mt-4">For full user/role management, use the <a class="text-orange-600 underline" href="/django-admin/">Django admin</a>.</p>
+{% endblock %}

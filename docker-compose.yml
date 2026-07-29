@@ -1,0 +1,68 @@
+# YourTrolley -- full production stack: Django app + PostgreSQL + Caddy.
+#
+# Quick start:
+#   1. cp .env.example .env   and fill in real values (see README.md)
+#   2. docker compose up -d --build
+#   3. docker compose exec app python manage.py createsuperuser
+#
+# Caddy automatically requests and renews HTTPS certificates for the
+# domain(s) you set in DJANGO_ALLOWED_HOSTS / the Caddyfile, as long as
+# your DNS already points at this server and ports 80/443 are reachable.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DJANGO_DB_NAME:-yourtrolley}
+      POSTGRES_USER: ${DJANGO_DB_USER:-yourtrolley_app}
+      POSTGRES_PASSWORD: ${DJANGO_DB_PASSWORD:?Set DJANGO_DB_PASSWORD in your .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DJANGO_DB_USER:-yourtrolley_app}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DJANGO_USE_POSTGRES: "True"
+      DJANGO_DB_HOST: db
+      DJANGO_DB_PORT: "5432"
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+      - logs_data:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - static_data:/srv/static:ro
+      - media_data:/srv/media:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+volumes:
+  postgres_data:
+  media_data:
+  static_data:
+  logs_data:
+  caddy_data:
+  caddy_config:

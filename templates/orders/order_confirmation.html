@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load currency_tags %}
+{% block title %}Order Confirmed{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto card text-center">
+  <h1 class="text-2xl font-bold text-green-600 mb-2">Order Placed! ✅</h1>
+  <p class="text-gray-600">Your order number is</p>
+  <p class="text-xl font-mono font-bold my-2">{{ order.order_number }}</p>
+  <p class="text-sm text-gray-500">Status: {{ order.get_status_display }}</p>
+  <p class="mt-3 font-bold">Total: {% currency order.store order.grand_total %}</p>
+  <p class="text-xs text-gray-400 mt-2">Save your order number to track your order or download your bill later.</p>
+  <div class="flex flex-col sm:flex-row gap-2 mt-4 justify-center">
+    <a href="{% url 'stores:store_detail' order.store.slug %}" class="btn">Back to Menu</a>
+    <a href="{% url 'orders:order_bill' order.order_number %}" class="btn btn-secondary">Download Bill (PDF)</a>
+    <a href="{% url 'orders:track_order' %}" class="btn btn-secondary">Track Order</a>
+  </div>
+</div>
+{% endblock %}
