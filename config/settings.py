@@ -84,36 +84,43 @@ ASGI_APPLICATION = "config.asgi.application"
 # ---------------------------------------------------------------------------
 # Database
 # ---------------------------------------------------------------------------
-# Switches between SQLite (default, zero-config, fine for local dev/testing)
-# and PostgreSQL (recommended for production) purely via an environment
-# variable -- no need to hand-edit this file. Set DJANGO_USE_POSTGRES=True
-# in your .env (or docker-compose environment) to switch, along with the
-# DJANGO_DB_* variables below. See README.md "Migrating to PostgreSQL" for
-# a full walkthrough.
-USE_POSTGRES = env.bool("DJANGO_USE_POSTGRES", default=False)
+# --- ACTIVE: SQLite (default for local development / testing) -------------
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
+}
 
-if USE_POSTGRES:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": env("DJANGO_DB_NAME"),
-            "USER": env("DJANGO_DB_USER"),
-            "PASSWORD": env("DJANGO_DB_PASSWORD"),
-            "HOST": env("DJANGO_DB_HOST", default="localhost"),
-            "PORT": env("DJANGO_DB_PORT", default="5432"),
-            "CONN_MAX_AGE": 60,
-            "OPTIONS": {
-                "sslmode": env("DJANGO_DB_SSLMODE", default="prefer"),
-            },
-        }
-    }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
+# --- PRODUCTION: PostgreSQL (uncomment to enable) --------------------------
+# To switch: comment out the SQLite block above, uncomment the block below,
+# and set these variables in your .env / real environment:
+#   DJANGO_DB_NAME, DJANGO_DB_USER, DJANGO_DB_PASSWORD,
+#   DJANGO_DB_HOST, DJANGO_DB_PORT
+# The Postgres driver is already in requirements.txt (psycopg2-binary).
+# See README.md "Migrating to PostgreSQL" for a full walkthrough.
+#
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": env("DJANGO_DB_NAME"),
+#         "USER": env("DJANGO_DB_USER"),
+#         "PASSWORD": env("DJANGO_DB_PASSWORD"),
+#         "HOST": env("DJANGO_DB_HOST", default="localhost"),
+#         "PORT": env("DJANGO_DB_PORT", default="5432"),
+#         "CONN_MAX_AGE": 60,
+#         "OPTIONS": {
+#             "sslmode": env("DJANGO_DB_SSLMODE", default="prefer"),
+#         },
+#     }
+# }
+#
+# Alternative one-line form using a DATABASE_URL env var, e.g.
+# postgres://user:password@host:5432/dbname
+#
+# DATABASES = {
+#     "default": env.db("DATABASE_URL"),
+# }
 
 # ---------------------------------------------------------------------------
 # Custom user model

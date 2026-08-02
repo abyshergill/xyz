@@ -4,6 +4,6 @@ qrcode[pil]>=8.0
 reportlab>=4.0        # generates downloadable PDF order receipts/bills
 django-environ>=0.14
 argon2-cffi>=25.0
-psycopg2-binary>=2.9   # PostgreSQL driver, needed only when DJANGO_USE_POSTGRES=True
+psycopg2-binary>=2.9   # PostgreSQL driver, only needed if you uncomment the Postgres block in config/settings.py
 gunicorn>=23.0          # production WSGI server (paired with Caddy as reverse proxy)
 whitenoise>=6.7          # optional: simplifies static file serving without a separate nginx/Caddy static route

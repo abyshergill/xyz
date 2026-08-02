@@ -124,14 +124,13 @@ this automatically.
 
 ## Migrating to PostgreSQL
 
-SQLite is fine for development, but you'll want PostgreSQL for anything
-real (concurrent writes, backups, multiple app instances). Switching is a
-single environment variable — no code changes needed.
+The app ships with **SQLite active by default** (see `config/settings.py`)
+— zero setup, fine for development and small deployments. A complete
+PostgreSQL configuration is included right below it, **commented out**,
+for whenever you're ready for something more production-grade (concurrent
+writes, proper backups, running multiple app instances).
 
-**If you're using Docker (recommended)** — this is handled automatically;
-skip to the [Docker section](#deploying-with-docker--caddy) below.
-
-**If you're running without Docker:**
+**To switch:**
 
 1. Install PostgreSQL and create a database + user:
    ```bash
@@ -142,31 +141,28 @@ skip to the [Docker section](#deploying-with-docker--caddy) below.
    CREATE DATABASE yourtrolley OWNER yourtrolley_app;
    \q
    ```
-2. In your `.env` (copy from `.env.example` if you haven't), set:
+2. In `config/settings.py`, comment out the **ACTIVE: SQLite** block and
+   uncomment the **PRODUCTION: PostgreSQL** block right below it.
+3. In your `.env` (copy from `.env.example` if you haven't), set:
    ```
-   DJANGO_USE_POSTGRES=True
    DJANGO_DB_NAME=yourtrolley
    DJANGO_DB_USER=yourtrolley_app
    DJANGO_DB_PASSWORD=choose-a-strong-password
    DJANGO_DB_HOST=localhost
    DJANGO_DB_PORT=5432
    ```
-3. Install the Postgres driver (already in `requirements.txt`):
+4. Install dependencies (the Postgres driver, `psycopg2-binary`, is
+   already listed in `requirements.txt`) and migrate:
    ```bash
    pip install -r requirements.txt
-   ```
-4. Run migrations against the new database:
-   ```bash
    python manage.py migrate
    python manage.py createsuperuser
    ```
 
-That's it — `config/settings.py` reads `DJANGO_USE_POSTGRES` and switches
-the `DATABASES` config automatically. If you have existing data in
-`db.sqlite3` you want to carry over, dump it before switching and load it
-after:
+If you have existing data in `db.sqlite3` you want to carry over, dump it
+**before** switching and load it after:
 ```bash
-# Before switching (while DJANGO_USE_POSTGRES is still False/unset):
+# Before switching (SQLite still active):
 python manage.py dumpdata --natural-foreign --natural-primary \
   --exclude contenttypes --exclude auth.permission > backup.json
 
@@ -176,17 +172,17 @@ python manage.py loaddata backup.json
 
 ## Deploying with Docker + Caddy
 
-The repo includes a complete, ready-to-run stack: `Dockerfile`,
-`docker-compose.yml`, `docker-entrypoint.sh`, and `Caddyfile` — Django app,
-PostgreSQL, and Caddy (automatic HTTPS) each in their own container.
+The repo includes a ready-to-run stack using **SQLite** by default:
+`Dockerfile`, `docker-compose.yml`, `docker-entrypoint.sh`, and
+`Caddyfile` — the Django app and Caddy (automatic HTTPS) each in their own
+container. No separate database container is needed for SQLite.
 
 **What each piece does:**
-- **`db`** — PostgreSQL 16, with a persistent volume so data survives
-  container restarts/rebuilds.
-- **`app`** — builds this project, waits for Postgres to be ready, runs
-  migrations and `collectstatic` automatically on every start (via
-  `docker-entrypoint.sh`), then serves the app with Gunicorn on an internal
-  port (never exposed directly to the internet).
+- **`app`** — builds this project, runs migrations and `collectstatic`
+  automatically on every start (via `docker-entrypoint.sh`), then serves
+  the app with Gunicorn on an internal port (never exposed directly to the
+  internet). The SQLite database file is bind-mounted from the host so
+  your data survives container rebuilds.
 - **`caddy`** — the only container with ports 80/443 open. It reverse-
   proxies everything to `app`, serves `/static/` and `/media/` directly
   from shared volumes for speed, and automatically requests + renews a
@@ -210,29 +206,32 @@ PostgreSQL, and Caddy (automatic HTTPS) each in their own container.
    - `DJANGO_SECRET_KEY` — generate one: `python -c "import secrets; print(secrets.token_urlsafe(50))"`
    - `DJANGO_ALLOWED_HOSTS` and `DJANGO_CSRF_TRUSTED_ORIGINS` — your real domain(s)
    - `DJANGO_SITE_BASE_URL` — `https://yourdomain.com` (used to build QR code links)
-   - `DJANGO_DB_PASSWORD` — a strong password (used by both the `db` and `app` containers)
 
-   You do **not** need to set `DJANGO_USE_POSTGRES` yourself here —
-   `docker-compose.yml` sets it to `True` automatically for the `app`
-   service.
+4. **Create the SQLite file on the host** so Docker can bind-mount it
+   correctly as a file (important — skipping this step causes Docker to
+   create a *directory* named `db.sqlite3` instead, which will break the
+   app):
+   ```bash
+   touch db.sqlite3
+   ```
 
-4. **Build and start everything:**
+5. **Build and start everything:**
    ```bash
    docker compose up -d --build
    ```
-   First run will: build the app image, start Postgres, wait for it to
-   become healthy, run migrations, collect static files, then start
-   Gunicorn and Caddy. Caddy will request the HTTPS certificate on its
-   first request to your domain (may take a few seconds).
+   First run will: build the app image, run migrations, collect static
+   files, then start Gunicorn and Caddy. Caddy will request the HTTPS
+   certificate on its first request to your domain (may take a few
+   seconds).
 
-5. **Create your admin account:**
+6. **Create your admin account:**
    ```bash
    docker compose exec app python manage.py createsuperuser
    ```
    (Superusers automatically get the Platform Admin role — see the
    "Quick-start demo accounts" section above for the underlying behavior.)
 
-6. **Visit `https://yourdomain.com`** — you should see the live site with
+7. **Visit `https://yourdomain.com`** — you should see the live site with
    a valid HTTPS certificate, no manual certificate setup required.
 
 ### Useful commands once running
@@ -241,29 +240,53 @@ PostgreSQL, and Caddy (automatic HTTPS) each in their own container.
 docker compose logs -f app          # tail the Django/Gunicorn logs
 docker compose logs -f caddy        # tail Caddy's access/cert logs
 docker compose exec app python manage.py <any management command>
-docker compose exec db psql -U yourtrolley_app -d yourtrolley   # DB shell
-docker compose down                 # stop everything (data volumes persist)
+docker compose down                 # stop everything (db.sqlite3 + volumes persist)
 docker compose up -d --build        # rebuild + restart after a code change
 ```
 
 ### Backups
 
-Postgres data lives in the `postgres_data` Docker volume. To back it up:
+With SQLite, your entire database is just the `db.sqlite3` file sitting
+next to `docker-compose.yml` on the host — back it up like any other file:
 ```bash
-docker compose exec db pg_dump -U yourtrolley_app yourtrolley > backup_$(date +%F).sql
+cp db.sqlite3 backup_$(date +%F).sqlite3
 ```
-To restore:
-```bash
-cat backup_2026-07-29.sql | docker compose exec -T db psql -U yourtrolley_app -d yourtrolley
-```
+
+### Switching this Docker setup to PostgreSQL
+
+If you later want Postgres in the Docker stack too:
+
+1. Follow the "Migrating to PostgreSQL" steps above to uncomment the
+   Postgres block in `config/settings.py`.
+2. Add a `db` service back to `docker-compose.yml`:
+   ```yaml
+   services:
+     db:
+       image: postgres:16-alpine
+       restart: unless-stopped
+       environment:
+         POSTGRES_DB: ${DJANGO_DB_NAME}
+         POSTGRES_USER: ${DJANGO_DB_USER}
+         POSTGRES_PASSWORD: ${DJANGO_DB_PASSWORD}
+       volumes:
+         - postgres_data:/var/lib/postgresql/data
+       healthcheck:
+         test: ["CMD-SHELL", "pg_isready -U ${DJANGO_DB_USER}"]
+   ```
+   Then add `depends_on: db` and `environment: {DJANGO_DB_HOST: db}` to the
+   `app` service, remove the `./db.sqlite3:/app/db.sqlite3` volume line
+   (no longer needed), and add `postgres_data:` under the top-level
+   `volumes:` section.
+3. Add a short wait-for-Postgres step at the top of
+   `docker-entrypoint.sh` (before `migrate` runs) so the app container
+   doesn't start before the `db` container is ready to accept connections.
 
 ### Running without Docker
 
-If you'd rather not use Docker, follow the "Migrating to PostgreSQL"
-section above, then run Caddy directly on the host — see the comment block
-at the bottom of the `Caddyfile` for the two lines to change (it points at
-`app:8000` for Docker by default; switch that to `127.0.0.1:8000` and run
-Gunicorn yourself):
+If you'd rather not use Docker, run Caddy directly on the host — see the
+comment block at the bottom of the `Caddyfile` for the two lines to change
+(it points at `app:8000` for Docker by default; switch that to
+`127.0.0.1:8000`) and run Gunicorn yourself:
 ```bash
 gunicorn config.wsgi:application --bind 127.0.0.1:8000 --workers 3
 ```

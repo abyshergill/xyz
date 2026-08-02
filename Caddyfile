@@ -10,7 +10,7 @@
 #
 # Replace "yourtrolley.example.com" with your real domain before deploying.
 
-yourtrolley.in, www.yourtrolley.in{
+yourtrolley.example.com, www.yourtrolley.example.com {
     encode zstd gzip
 
     # Security headers (defence-in-depth alongside Django's own security

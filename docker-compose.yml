@@ -1,46 +1,34 @@
-# YourTrolley -- full production stack: Django app + PostgreSQL + Caddy.
+# YourTrolley -- app (SQLite) + Caddy (automatic HTTPS).
 #
 # Quick start:
 #   1. cp .env.example .env   and fill in real values (see README.md)
-#   2. docker compose up -d --build
-#   3. docker compose exec app python manage.py createsuperuser
+#   2. touch db.sqlite3       (so Docker can bind-mount it as a file)
+#   3. docker compose up -d --build
+#   4. docker compose exec app python manage.py createsuperuser
 #
 # Caddy automatically requests and renews HTTPS certificates for the
-# domain(s) you set in DJANGO_ALLOWED_HOSTS / the Caddyfile, as long as
-# your DNS already points at this server and ports 80/443 are reachable.
+# domain(s) you set in the Caddyfile, as long as your DNS already points
+# at this server and ports 80/443 are reachable.
+#
+# Want PostgreSQL instead of SQLite? See the "Switching this Docker setup
+# to PostgreSQL" section in README.md -- it's a small, well-documented
+# change to this file plus uncommenting the Postgres block in
+# config/settings.py.
 
 services:
-  db:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${DJANGO_DB_NAME:-yourtrolley}
-      POSTGRES_USER: ${DJANGO_DB_USER:-yourtrolley_app}
-      POSTGRES_PASSWORD: ${DJANGO_DB_PASSWORD:?Set DJANGO_DB_PASSWORD in your .env}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DJANGO_DB_USER:-yourtrolley_app}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   app:
     build: .
     restart: unless-stopped
     env_file:
       - .env
-    environment:
-      DJANGO_USE_POSTGRES: "True"
-      DJANGO_DB_HOST: db
-      DJANGO_DB_PORT: "5432"
     volumes:
+      # SQLite database file, bind-mounted from the host so your data
+      # survives container rebuilds. Run `touch db.sqlite3` on the host
+      # once before first `docker compose up` so this file exists.
+      - ./db.sqlite3:/app/db.sqlite3
       - media_data:/app/media
       - static_data:/app/staticfiles
       - logs_data:/app/logs
-    depends_on:
-      db:
-        condition: service_healthy
     expose:
       - "8000"
 
@@ -60,7 +48,6 @@ services:
       - app
 
 volumes:
-  postgres_data:
   media_data:
   static_data:
   logs_data:
