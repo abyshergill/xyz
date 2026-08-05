@@ -8,27 +8,35 @@ class StoreForm(forms.ModelForm):
     class Meta:
         model = Store
         fields = [
-            "name", "description", "store_picture", "address", "phone_number",
-            "currency_code", "custom_currency_symbol", "custom_currency_icon",
-            "require_table_number", "require_phone_number", "require_email",
+            "name",
+            "description",
+            "store_picture",
+            "pincode",
+            "store_category",
+            "currency_code",
+            "custom_currency_symbol",
+            "custom_currency_icon",
+            "require_table_number",
+            "require_phone_number",
+            "require_email",
         ]
-        widgets = {"description": forms.Textarea(attrs={"rows": 4})}
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 4}),
+            "pincode": forms.TextInput(
+                attrs={
+                    "placeholder": "e.g. 201301",
+                    "class": "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none",
+                }
+            ),
+        }
         help_texts = {
             "currency_code": "Prices across your store will be shown with this symbol.",
+            "pincode": "Required. Customers can search for your store by pincode.",
+            "store_category": "Choose the type of store you are running.",
         }
 
 
 class OperatingHoursForm(forms.ModelForm):
-    """
-    The 'day' field is locked (disabled) on this form. The view guarantees
-    exactly one OperatingHours row per day of the week already exists
-    before this formset is ever built (see edit_operating_hours), so the
-    day is always correctly pre-set from the instance -- there's no blank
-    dropdown for an owner to accidentally leave unset or set to the wrong
-    day, which previously caused hours to save against the wrong day (or
-    fail to save at all) and made the store appear permanently closed.
-    """
-
     class Meta:
         model = OperatingHours
         fields = ["day", "opening_time", "closing_time", "is_closed"]
@@ -42,14 +50,14 @@ class OperatingHoursForm(forms.ModelForm):
         self.fields["day"].disabled = True
 
 
-# extra=0 because the view always ensures all 7 day-rows already exist as
-# real instances before this formset is instantiated -- there should never
-# be blank "extra" rows with an ambiguous/unset day.
 OperatingHoursFormSet = inlineformset_factory(
-    Store, OperatingHours,
+    Store,
+    OperatingHours,
     form=OperatingHoursForm,
     fields=["day", "opening_time", "closing_time", "is_closed"],
-    extra=0, max_num=7, can_delete=False,
+    extra=0,
+    max_num=7,
+    can_delete=False,
 )
 
 
@@ -62,13 +70,58 @@ class CategoryForm(forms.ModelForm):
 class FoodItemForm(forms.ModelForm):
     class Meta:
         model = FoodItem
-        fields = ["category", "name", "description", "price", "stock_quantity", "image", "is_available"]
+        fields = [
+            "category",
+            "name",
+            "description",
+            "price",
+            "stock_quantity",
+            "image",
+            "is_available",
+        ]
         widgets = {"description": forms.Textarea(attrs={"rows": 3})}
 
     def __init__(self, *args, store=None, **kwargs):
         super().__init__(*args, **kwargs)
         if store is not None:
-            # Restrict the category dropdown to this store's own categories --
-            # prevents an owner from ever assigning another store's category
-            # (an IDOR-style vector) even via a crafted POST.
-            self.fields["category"].queryset = Category.objects.filter(store=store)
+            self.fields["category"].queryset = Category.objects.filter(
+                store=store
+            )
+
+
+class ContactForm(forms.Form):
+    name = forms.CharField(
+        max_length=150, required=False,
+        widget=forms.TextInput(attrs={
+            "placeholder": "Your name (optional)",
+            "class": "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none",
+        }),
+    )
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={
+            "placeholder": "your@email.com",
+            "class": "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none",
+        }),
+    )
+    phone_number = forms.CharField(
+        max_length=16,
+        widget=forms.TextInput(attrs={
+            "placeholder": "e.g. +66 2 123 4567",
+            "class": "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none",
+        }),
+    )
+    message = forms.CharField(
+        max_length=1000,
+        widget=forms.Textarea(attrs={
+            "rows": 6,
+            "maxlength": 1000,
+            "placeholder": "Describe your complaint or concern (max 1000 characters)...",
+            "class": "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none",
+        }),
+    )
+
+    def clean_message(self):
+        msg = self.cleaned_data.get("message", "")
+        if len(msg) > 1000:
+            raise forms.ValidationError("Message must not exceed 1000 characters.")
+        return msg

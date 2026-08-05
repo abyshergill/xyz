@@ -1,0 +1,101 @@
+docker-compose up --build -d
+docker-compose exec web python manage.py migrate
+docker-compose exec web python manage.py collectstatic --no-input
+
+docker-compose exec web python manage.py createsuperuser
+
+
+Step 5: Access the site
+Open your browser and go to https://localhost.
+Note: Because Caddy generated a local certificate, your browser will likely show a "Connection is not private" warning. This is perfectly normal for local testing. Click "Advanced" and "Proceed to localhost (unsafe)".
+
+2. Integrating a Real Domain
+When you are ready to move this to a live server (like a VPS from DigitalOcean, AWS, or Linode) with your own domain, the transition is incredibly smooth thanks to Caddy.
+
+Point your DNS: Go to your domain registrar (e.g., GoDaddy, Namecheap) and create an A Record pointing to your live server's public IP address.
+
+Update Caddyfile: Open your Caddyfile and replace yourtrolley.example.com, [www.yourtrolley.example.com](https://www.yourtrolley.example.com), localhost with your actual domain:
+
+Code snippet
+yourrealdomain.com, www.yourrealdomain.com {
+    # ... rest of the file stays exactly the same
+Update .env: Change your allowed hosts and base URL:
+
+Code snippet
+DJANGO_ALLOWED_HOSTS=yourrealdomain.com,www.yourrealdomain.com,127.0.0.1
+DJANGO_SITE_BASE_URL=https://yourrealdomain.com
+Restart Caddy: Restart the containers. Caddy will automatically reach out to Let's Encrypt and provision a free, valid, trusted HTTPS certificate for your domain.
+
+3. Handling SMTP (Emails) for Free
+You absolutely do not need to buy a paid SMTP plan just to send order confirmations and password resets. You have two great free options:
+
+Option A: Use a Free Gmail Account (Recommended for starting out)
+You can use a standard free Gmail account to send up to 500 emails per day.
+
+Turn on 2-Step Verification for the Google account.
+
+Generate an "App Password" (a 16-character code) in your Google Account security settings.
+
+Update your .env file like this:
+
+Code snippet
+DJANGO_EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+DJANGO_EMAIL_HOST=smtp.gmail.com
+DJANGO_EMAIL_PORT=587
+DJANGO_EMAIL_USE_TLS=True
+DJANGO_EMAIL_HOST_USER=your.store.email@gmail.com
+DJANGO_EMAIL_HOST_PASSWORD=your-16-character-app-password
+DJANGO_DEFAULT_FROM_EMAIL=your.store.email@gmail.com
+Option B: Print Emails to the Console (For local testing)
+If you just want to test things locally without sending real emails, you can tell Django to print the emails directly into the server logs instead of sending them.
+Update your .env:
+
+Code snippet
+DJANGO_EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+Now, whenever a user resets a password, you can view the email containing the reset link by typing:
+
+Bash
+docker logs django_app
+
+
+
+
+That is a very smart approach. Launching a Minimum Viable Product (MVP) first is exactly how you should build software. It lets you test the core features (ordering, stalls, QR codes) without getting bogged down by third-party integrations like SMTP or payment gateways right away.
+
+For your MVP, you can completely bypass a real email server. Django has a built-in feature that catches any outgoing emails (like password resets or order confirmations) and simply prints the text directly into your server console. This means the app will function perfectly without throwing errors, and you can still see the emails if you need to.
+
+Here is exactly how to configure your .env for the MVP phase.
+
+1. Update your .env for the MVP
+Change the email section at the bottom of your .env file to use the console backend, and leave the host/password blank:
+
+Code snippet
+# --- Email (MVP Mode: Prints emails to the terminal instead of sending) ---
+DJANGO_EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+DJANGO_EMAIL_HOST=
+DJANGO_EMAIL_PORT=587
+DJANGO_EMAIL_USE_TLS=True
+DJANGO_EMAIL_HOST_USER=
+DJANGO_EMAIL_HOST_PASSWORD=
+DJANGO_DEFAULT_FROM_EMAIL=no-reply@localhost
+2. How to "Read" Your Emails
+When a user requests a password reset or the system generates an email, it won't go to their real inbox. Instead, it will be printed in your Docker logs.
+
+To read it, you just run this command in your terminal:
+
+Bash
+docker logs django_app
+You will see the full text of the email, including any reset links, right there on your screen!
+
+3. Quick Start Reminder
+Once your .env and Caddyfile are saved, you can fire up your MVP locally with these commands:
+
+docker-compose up --build -d (Starts the servers)
+
+docker-compose exec web python manage.py migrate (Creates the database)
+
+docker-compose exec web python manage.py collectstatic --no-input (Gathers CSS/JS)
+
+docker-compose exec web python manage.py createsuperuser (Creates your admin account)
+
+Go to https://localhost and your MVP is live!

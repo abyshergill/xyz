@@ -1,55 +1,86 @@
-# YourTrolley -- app (SQLite) + Caddy (automatic HTTPS).
-#
-# Quick start:
-#   1. cp .env.example .env   and fill in real values (see README.md)
-#   2. touch db.sqlite3       (so Docker can bind-mount it as a file)
-#   3. docker compose up -d --build
-#   4. docker compose exec app python manage.py createsuperuser
-#
-# Caddy automatically requests and renews HTTPS certificates for the
-# domain(s) you set in the Caddyfile, as long as your DNS already points
-# at this server and ports 80/443 are reachable.
-#
-# Want PostgreSQL instead of SQLite? See the "Switching this Docker setup
-# to PostgreSQL" section in README.md -- it's a small, well-documented
-# change to this file plus uncommenting the Postgres block in
-# config/settings.py.
+# version: '3.8'
 
 services:
-  app:
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_DB: ${DJANGO_DB_NAME}
+      POSTGRES_USER: ${DJANGO_DB_USER}
+      POSTGRES_PASSWORD: ${DJANGO_DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  web:
     build: .
-    restart: unless-stopped
+    container_name: django_app
     env_file:
       - .env
+    restart: always
+    #command: gunicorn your_project_name.wsgi:application --bind 0.0.0.0:8000
     volumes:
-      # SQLite database file, bind-mounted from the host so your data
-      # survives container rebuilds. Run `touch db.sqlite3` on the host
-      # once before first `docker compose up` so this file exists.
-      - ./db.sqlite3:/app/db.sqlite3
-      - media_data:/app/media
-      - static_data:/app/staticfiles
-      - logs_data:/app/logs
-    expose:
-      - "8000"
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    environment:
+      - DJANGO_USE_POSTGRES=${DJANGO_USE_POSTGRES}
+      - DJANGO_DB_NAME=${DJANGO_DB_NAME}
+      - DJANGO_DB_USER=${DJANGO_DB_USER}
+      - DJANGO_DB_PASSWORD=${DJANGO_DB_PASSWORD}
+      - DJANGO_DB_HOST=db
+      - DJANGO_DB_PORT=${DJANGO_DB_PORT}
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DJANGO_DEBUG=False
+    depends_on:
+      - db
+    networks:
+      - app-network
 
   caddy:
     image: caddy:2-alpine
-    restart: unless-stopped
+    container_name: caddy_proxy
+    restart: always
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - static_data:/srv/static:ro
-      - media_data:/srv/media:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - static_volume:/srv/static    
+      - media_volume:/srv/media
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - app
+      - web
+    networks:
+      - app-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin_gui
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+    networks:
+      - app-network
+    volumes:                     
+      - pgadmin_data:/var/lib/pgadmin   #
 
 volumes:
-  media_data:
-  static_data:
-  logs_data:
+  postgres_data:
+  static_volume:
+  media_volume:
   caddy_data:
   caddy_config:
+  pgadmin_data:
+
+networks:
+  app-network:
+    driver: bridge

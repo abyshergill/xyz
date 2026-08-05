@@ -2,16 +2,22 @@
 {% load currency_tags %}
 {% block title %}{{ store.name }}{% endblock %}
 {% block content %}
+
 <div class="card mb-6 flex flex-col sm:flex-row gap-4">
   {% if store.store_picture %}
     <img src="{{ store.store_picture.url }}" alt="{{ store.name }}" class="w-full sm:w-48 h-40 object-cover rounded">
   {% endif %}
   <div class="flex-1">
     <h1 class="text-2xl font-bold">{{ store.name }}</h1>
+    <!-- Store category badge -->
+    <span class="inline-block bg-blue-100 text-blue-800 text-xs rounded-full px-2 py-0.5 mt-1 mb-2">
+      {{ store.get_store_category_display }}
+    </span>
     <p class="text-gray-600">{{ store.description }}</p>
     <p class="text-sm text-gray-500 mt-1">{{ store.address }} &middot; {{ store.phone_number }}</p>
+    <p class="text-sm text-gray-500 mt-0.5">Pincode: {{ store.pincode }}</p>
     <p class="mt-2 text-sm font-medium {% if store_is_open %}text-green-600{% else %}text-red-500{% endif %}">
-      {% if store_is_open %}● Open now{% else %}● Closed{% endif %}
+      {% if store_is_open %} Open now{% else %} Closed{% endif %}
     </p>
   </div>
   {% if store.qr_code %}
@@ -28,34 +34,97 @@
   </div>
 {% endif %}
 
-{% for category in categories %}
-  <h2 class="text-xl font-semibold mt-6 mb-3">{{ category.name }}</h2>
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-    {% for item in category.items.all %}
-      {% if item.is_available %}
-      <div class="card flex flex-col">
-        {% if item.image %}
-          <img src="{{ item.image.url }}" alt="{{ item.name }}" class="w-full h-32 object-cover rounded mb-2">
-        {% endif %}
-        <h3 class="font-semibold">{{ item.name }}</h3>
-        <p class="text-sm text-gray-500 flex-1">{{ item.description }}</p>
-        <p class="font-bold mt-1">{% currency store item.price %}</p>
-        {% if item.in_stock %}
-          <form method="post" action="{% url 'orders:add_to_cart' store.slug %}" class="mt-2 flex gap-2 items-center">
-            {% csrf_token %}
-            <input type="hidden" name="food_item_id" value="{{ item.pk }}">
-            <input type="number" name="quantity" value="1" min="1" max="99" class="w-16">
-            <button type="submit" class="btn{% if not store_is_open %} opacity-50 cursor-not-allowed{% endif %}" {% if not store_is_open %}disabled{% endif %}>Add</button>
-          </form>
-        {% else %}
-          <p class="text-xs text-red-500 mt-2">Out of stock</p>
-        {% endif %}
-      </div>
-      {% endif %}
+<!-- ===== ITEM SEARCH BAR ===== -->
+<form method="get" class="mb-6 flex gap-2">
+  <input type="text" name="item_q" value="{{ item_search }}"
+         placeholder="Search items in this store..."
+         class="flex-1 max-w-md px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
+  <button type="submit" class="btn">Search Items</button>
+  {% if item_search %}
+    <a href="{% url 'stores:store_detail' store.slug %}" class="btn btn-secondary">Clear</a>
+  {% endif %}
+</form>
+
+<!-- ===== CATEGORY MENUBAR ===== -->
+{% if category_data %}
+<nav class="sticky top-0 z-10 bg-white shadow-sm rounded-lg mb-6 overflow-x-auto">
+  <ul class="flex gap-1 px-2 py-2 whitespace-nowrap">
+    {% for cd in category_data %}
+      <li>
+        <a href="#cat-{{ cd.category.pk }}"
+           class="inline-block px-4 py-2 rounded-full text-sm font-medium
+                  {% if cd.is_expanded %}bg-orange-600 text-white{% else %}bg-orange-50 text-orange-700 hover:bg-orange-100{% endif %}
+                  transition">
+          {{ cd.category.name }}
+          <span class="text-xs opacity-70">({{ cd.total_count }})</span>
+        </a>
+      </li>
     {% endfor %}
+  </ul>
+</nav>
+{% endif %}
+
+<!-- ===== MENU ITEMS BY CATEGORY ===== -->
+{% for cd in category_data %}
+  <div id="cat-{{ cd.category.pk }}" class="scroll-mt-20">
+    <h2 class="text-xl font-semibold mt-6 mb-3">
+      {{ cd.category.name }}
+      <span class="text-sm text-gray-400 font-normal">({{ cd.total_count }} items)</span>
+    </h2>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {% for item in cd.items %}
+        <div class="card flex flex-col">
+          {% if item.image %}
+            <img src="{{ item.image.url }}" alt="{{ item.name }}" class="w-full h-32 object-cover rounded mb-2">
+          {% endif %}
+          <h3 class="font-semibold">{{ item.name }}</h3>
+          <p class="text-sm text-gray-500 flex-1">{{ item.description }}</p>
+          <p class="font-bold mt-1">{% currency store item.price %}</p>
+          {% if item.in_stock %}
+            <form method="post" action="{% url 'orders:add_to_cart' store.slug %}" class="mt-2 flex gap-2 items-center">
+              {% csrf_token %}
+              <input type="hidden" name="food_item_id" value="{{ item.pk }}">
+              <input type="number" name="quantity" value="1" min="1" max="99" class="w-16">
+              <button type="submit" class="btn{% if not store_is_open %} opacity-50 cursor-not-allowed{% endif %}" {% if not store_is_open %}disabled{% endif %}>Add</button>
+            </form>
+          {% else %}
+            <p class="text-xs text-red-500 mt-2">Out of stock</p>
+          {% endif %}
+        </div>
+      {% empty %}
+        <p class="text-gray-400 text-sm col-span-full">No items match your search in this category.</p>
+      {% endfor %}
+    </div>
+
+    <!-- "See all" link — only shown when items were truncated and not searching -->
+    {% if cd.hidden_count > 0 and not item_search %}
+      <div class="mt-3 text-center">
+        <a href="?expand={{ cd.category.name }}{% if item_search %}&item_q={{ item_search }}{% endif %}#cat-{{ cd.category.pk }}"
+           class="inline-block text-sm font-medium text-orange-600 hover:text-orange-800 hover:underline">
+          +{{ cd.hidden_count }} more in {{ cd.category.name }} — See all &raquo;
+        </a>
+      </div>
+    {% endif %}
+
+    <!-- "Show less" link — only when expanded and not searching -->
+    {% if cd.is_expanded and not item_search and cd.total_count > 4 %}
+      <div class="mt-3 text-center">
+        <a href="{% url 'stores:store_detail' store.slug %}#cat-{{ cd.category.pk }}"
+           class="inline-block text-sm font-medium text-gray-500 hover:text-gray-700 hover:underline">
+          &laquo; Show less
+        </a>
+      </div>
+    {% endif %}
   </div>
 {% empty %}
-  <p class="text-gray-500">This store hasn't added any menu items yet.</p>
+  <p class="text-gray-500">
+    {% if item_search %}
+      No items found matching "{{ item_search }}".
+    {% else %}
+      This store hasn't added any menu items yet.
+    {% endif %}
+  </p>
 {% endfor %}
 
 <div class="mt-8 text-center">

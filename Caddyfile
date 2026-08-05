@@ -10,7 +10,8 @@
 #
 # Replace "yourtrolley.example.com" with your real domain before deploying.
 
-yourtrolley.example.com, www.yourtrolley.example.com {
+# yourtrolley.example.com, www.yourtrolley.example.com {
+localhost {
     encode zstd gzip
 
     # Security headers (defence-in-depth alongside Django's own security
@@ -39,7 +40,7 @@ yourtrolley.example.com, www.yourtrolley.example.com {
 
     # Everything else is proxied to the Django app container, which runs
     # Gunicorn internally on port 8000 (see Dockerfile CMD).
-    reverse_proxy app:8000 {
+    reverse_proxy web:8000 {
         header_up X-Forwarded-Proto {scheme}
         header_up X-Real-IP {remote_host}
     }

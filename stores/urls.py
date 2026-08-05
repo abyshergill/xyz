@@ -8,6 +8,7 @@ urlpatterns = [
     # Public
     path("stores/", views.store_list, name="store_list"),
     path("store/<slug:slug>/", views.store_detail, name="store_detail"),
+    path("contact-us/", views.contact_us, name="contact_us"),
 
     # Owner area (path prefix /owner/ is enforced by RoleBasedAccessMiddleware)
     path("owner/dashboard/", views.owner_dashboard, name="owner_dashboard"),

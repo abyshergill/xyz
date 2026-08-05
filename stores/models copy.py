@@ -61,35 +61,9 @@ class Store(models.Model):
     store_picture = models.ImageField(upload_to=store_image_path, blank=True, null=True)
     qr_code = models.ImageField(upload_to=qr_code_path, blank=True, null=True)
 
-     # Store category — what kind of store is this?
-    class StoreCategory(models.TextChoices):
-        FOOD = "FOOD", "Food & Beverage"
-        ELECTRONICS = "ELECTRONICS", "Electronics"
-        FASHION = "FASHION", "Fashion & Apparel"
-        GROCERY = "GROCERY", "Grocery & Daily Needs"
-        HEALTH = "HEALTH", "Health & Beauty"
-        HOME = "HOME", "Home & Living"
-        SPORTS = "SPORTS", "Sports & Fitness"
-        BOOKS = "BOOKS", "Books & Stationery"
-        TOYS = "TOYS", "Toys & Games"
-        AUTOMOTIVE = "AUTOMOTIVE", "Automotive"
-        OTHER = "OTHER", "Other"
-
-    store_category = models.CharField(
-        max_length=20,
-        choices=StoreCategory.choices,
-        default=StoreCategory.FOOD,
-        help_text="What kind of store is this? Customers can filter by this on the main page.",
-    )
-
-    pincode = models.CharField(
-        max_length=10,
-        blank=False,
-        null=False,
-        default="",  # needed so existing rows don't break during migration
-        help_text="Required. Customers can search for your store by pincode.",
-    )
-
+    # Contact / location
+    address = models.CharField(max_length=255, blank=True)
+    phone_number = models.CharField(max_length=16, blank=True)
 
     # Currency: pick a common one, or go CUSTOM and supply a text symbol
     # and/or upload a small icon image to use instead of/alongside text.
@@ -146,19 +120,16 @@ class Store(models.Model):
         super().save(*args, **kwargs)
 
     def clean(self):
-        # Case-insensitive uniqueness check
+        # Case-insensitive uniqueness check (DB unique=True is case-sensitive
+        # on SQLite/Postgres by default for CharField).
         qs = Store.objects.filter(name__iexact=self.name).exclude(pk=self.pk)
         if qs.exists():
             raise ValidationError({"name": "A store with this name already exists."})
 
         if self.currency_code == self.Currency.CUSTOM and not self.custom_currency_symbol and not self.custom_currency_icon:
             raise ValidationError({
-                "custom_currency_symbol": "Provide a custom symbol (e.g. 'K') or upload a currency icon when Currency is set to Custom.",
+                "custom_currency_symbol": "Provide a custom symbol (e.g. 'Kč') or upload a currency icon when Currency is set to Custom.",
             })
-
-        # Pincode is compulsory
-        if not self.pincode or not self.pincode.strip():
-            raise ValidationError({"pincode": "Pincode is required."})
 
     def is_open_now(self) -> bool:
         """
@@ -246,49 +217,3 @@ class FoodItem(models.Model):
     @property
     def in_stock(self):
         return self.stock_quantity > 0 and self.is_available
-
-    # --- Store category (what kind of store is this?) ---
-    class StoreCategory(models.TextChoices):
-        FOOD = "FOOD", "Food & Beverage"
-        ELECTRONICS = "ELECTRONICS", "Electronics"
-        FASHION = "FASHION", "Fashion & Apparel"
-        GROCERY = "GROCERY", "Grocery & Daily Needs"
-        HEALTH = "HEALTH", "Health & Beauty"
-        HOME = "HOME", "Home & Living"
-        SPORTS = "SPORTS", "Sports & Fitness"
-        BOOKS = "BOOKS", "Books & Stationery"
-        TOYS = "TOYS", "Toys & Games"
-        AUTOMOTIVE = "AUTOMOTIVE", "Automotive"
-        OTHER = "OTHER", "Other"
-
-    store_category = models.CharField(
-        max_length=20,
-        choices=StoreCategory.choices,
-        default=StoreCategory.FOOD,
-        help_text="What kind of store is this? Customers can filter by this on the main page.",
-    )
-
-    # --- Pincode (compulsory) ---
-    pincode = models.CharField(
-        max_length=10,
-        blank=False,
-        null=False,
-        help_text="Required. Customers can search for stores by pincode.",
-    )
-
-
-class ContactMessage(models.Model):
-    """Stores complaints/concerns submitted by visitors via the Contact Us page."""
-    name = models.CharField(max_length=150, blank=True, help_text="Optional.")
-    email = models.EmailField()
-    phone_number = models.CharField(max_length=16)
-    message = models.CharField(max_length=1000, help_text="Maximum 1000 characters.")
-    submitted_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["-submitted_at"]
-        verbose_name = "Contact Message"
-        verbose_name_plural = "Contact Messages"
-
-    def __str__(self):
-        return f"{self.email} — {self.submitted_at:%Y-%m-%d %H:%M}"

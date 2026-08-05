@@ -1,25 +1,46 @@
 {% extends "base.html" %}
 {% block title %}Operating Hours{% endblock %}
 {% block content %}
-<div class="max-w-2xl mx-auto card">
+<div class="max-w-2xl mx-auto card px-4 sm:px-6">
   <h1 class="text-xl font-bold mb-4">Operating Hours &mdash; {{ store.name }}</h1>
   <form method="post" novalidate>
     {% csrf_token %}
     {{ formset.management_form }}
-    <p class="text-sm text-gray-500 mb-3">Set your opening and closing time for each day, or check "Closed all day" for days you don't operate.</p>
-    <div class="space-y-3">
+    <p class="text-sm text-gray-500 mb-4">Set your opening and closing time for each day, or check "Closed all day" for days you don't operate.</p>
+    
+    <div class="space-y-4">
       {% for hform in formset %}
-        <div class="border rounded p-3 grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
+        <div class="border rounded-lg p-3 sm:p-4 bg-gray-50 sm:bg-white grid grid-cols-1 sm:grid-cols-4 gap-3 items-center">
           {{ hform.id }}
-          <div><label class="block text-xs font-semibold">{{ hform.instance.get_day_display }}</label></div>
-          <div><label class="block text-xs">Opens</label>{{ hform.opening_time }}</div>
-          <div><label class="block text-xs">Closes</label>{{ hform.closing_time }}</div>
-          <div class="flex items-center gap-1"><label class="text-xs">{{ hform.is_closed }} Closed all day</label></div>
+          
+          <!-- Day Name -->
+          <div class="font-semibold text-sm sm:text-base text-gray-800">
+            {{ hform.instance.get_day_display }}
+          </div>
+          
+          <!-- Opening Time -->
+          <div>
+            <label class="block text-xs text-gray-600 sm:hidden mb-1">Opens</label>
+            {{ hform.opening_time }}
+          </div>
+          
+          <!-- Closing Time -->
+          <div>
+            <label class="block text-xs text-gray-600 sm:hidden mb-1">Closes</label>
+            {{ hform.closing_time }}
+          </div>
+          
+          <!-- Closed Checkbox -->
+          <div class="flex items-center gap-2 pt-1 sm:pt-0">
+            {{ hform.is_closed }}
+            <label class="text-xs sm:text-sm text-gray-700">Closed all day</label>
+          </div>
         </div>
-        {% for error in hform.non_field_errors %}<p class="text-red-600 text-xs">{{ error }}</p>{% endfor %}
+        {% for error in hform.non_field_errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
       {% endfor %}
     </div>
-    <button type="submit" class="btn mt-4 w-full">Save Hours</button>
+    
+    <button type="submit" class="btn mt-6 w-full">Save Hours</button>
   </form>
 </div>
 {% endblock %}

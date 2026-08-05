@@ -4,24 +4,25 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.db.models import Case, IntegerField, Value, When
+from django.db.models import Case, IntegerField, Q, Value, When
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
-from .forms import CategoryForm, FoodItemForm, OperatingHoursFormSet, StoreForm
-from .models import Category, FoodItem, OperatingHours, Store
+from .forms import CategoryForm, ContactForm, FoodItemForm, OperatingHoursFormSet, StoreForm
+from .models import Category, ContactMessage, FoodItem, OperatingHours, Store
 from .utils import generate_store_qr_code, validate_and_process_image
 from django.conf import settings
 
 logger = logging.getLogger("stores")
+
+ITEMS_PER_CATEGORY_PREVIEW = 4  # <-- number of items shown per category on store detail
 
 
 def _require_owner_of(request, store):
     """
     RBAC guard used inside every owner view: confirms the logged-in user
     owns *this specific* store object, not just that they hold the OWNER
-    role. This is what stops one owner from editing another owner's store
-    (an Insecure Direct Object Reference / broken access control bug).
+    role.
     """
     if store.owner_id != request.user.id:
         logger.warning(
@@ -36,25 +37,131 @@ def _require_owner_of(request, store):
 # ---------------------------------------------------------------------------
 
 def store_list(request):
+    """
+    Public 'Browse Stalls' page.
+    Supports filtering by:
+      - name          (q)    — case-insensitive partial match on store name
+      - store_category (scat) — dropdown: food, electronics, fashion, etc.
+      - pincode       (pin)  — case-insensitive partial match on store pincode
+    Any combination of the three filters can be used together (AND logic).
+    If none are provided, all active stores are listed.
+    """
     stores = Store.objects.filter(is_active=True).prefetch_related("operating_hours")
+
     query = request.GET.get("q", "").strip()
+    store_category = request.GET.get("scat", "").strip()
+    pincode = request.GET.get("pin", "").strip()
+
     if query:
-        stores = stores.filter(name__icontains=query)  # ORM param binding -- SQLi-safe
+        stores = stores.filter(name__icontains=query)
+
+    if store_category:
+        stores = stores.filter(store_category=store_category)
+
+    if pincode:
+        stores = stores.filter(pincode__icontains=pincode)
+
+    # Build the store category dropdown from the StoreCategory choices
+    all_store_categories = Store.StoreCategory.choices  # list of (value, label) tuples
+
     paginator = Paginator(stores, 12)
     page_obj = paginator.get_page(request.GET.get("page"))
-    return render(request, "stores/store_list.html", {"page_obj": page_obj, "query": query})
+
+    # Preserve filter params in pagination links
+    filter_params = []
+    if query:
+        filter_params.append(f"q={query}")
+    if store_category:
+        filter_params.append(f"scat={store_category}")
+    if pincode:
+        filter_params.append(f"pin={pincode}")
+    filter_query_string = "&".join(filter_params)
+
+    # Resolve the human-readable label for the selected store category
+    selected_category_label = ""
+    for value, label in all_store_categories:
+        if value == store_category:
+            selected_category_label = label
+            break
+
+    return render(request, "stores/store_list.html", {
+        "page_obj": page_obj,
+        "query": query,
+        "store_category": store_category,
+        "selected_category_label": selected_category_label,
+        "pincode": pincode,
+        "all_store_categories": all_store_categories,
+        "filter_query_string": filter_query_string,
+    })
 
 
 def store_detail(request, slug):
-    """Public menu page. This is also exactly where a scanned QR code lands."""
+    """
+    Public menu page (also where a scanned QR code lands).
+
+    Features:
+      1. Category menubar — horizontal nav bar listing all categories as
+         anchor links so customers can jump to a category section.
+      2. 4-item preview per category — each category shows only the first
+         ITEMS_PER_CATEGORY_PREVIEW items.  A 'See all in <category>' link
+         expands to show every item in that category.
+      3. Item search — a search box lets customers filter items by name
+         within this store.  When searching, the 4-item limit is removed
+         and only matching items are shown.
+    """
     store = get_object_or_404(Store, slug=slug, is_active=True)
-    categories = store.categories.prefetch_related("items").order_by("display_order", "name")
+
+    # All categories for this store (for the menubar + sections)
+    categories = (
+        store.categories
+        .prefetch_related("items")
+        .order_by("display_order", "name")
+    )
+
+    # --- Item search within the store ---
+    item_search = request.GET.get("item_q", "").strip()
+
+    # --- "See all" expansion for a single category ---
+    expand_category = request.GET.get("expand", "").strip()
+
+    # Build a list of dicts with category + its items (limited to 4 unless
+    # expanded or searching)
+    category_data = []
+    for category in categories:
+        items = category.items.all()
+
+        # If item search is active, filter items by name
+        if item_search:
+            items = items.filter(name__icontains=item_search)
+
+        # Only show available items on the public page
+        items = [it for it in items if it.is_available]
+
+        is_expanded = (expand_category == category.name) or bool(item_search)
+
+        if not is_expanded:
+            visible_items = items[:ITEMS_PER_CATEGORY_PREVIEW]
+        else:
+            visible_items = items
+
+        total_count = len(items)
+
+        category_data.append({
+            "category": category,
+            "items": visible_items,
+            "total_count": total_count,
+            "hidden_count": total_count - len(visible_items),
+            "is_expanded": is_expanded,
+        })
+
     cart = request.session.get(f"cart_{store.slug}", {})
+
     return render(request, "stores/store_detail.html", {
         "store": store,
-        "categories": categories,
+        "category_data": category_data,
         "store_is_open": store.is_open_now(),
         "cart_item_count": sum(cart.values()) if cart else 0,
+        "item_search": item_search,
     })
 
 
@@ -96,7 +203,7 @@ def create_store(request):
                 store.custom_currency_icon = validate_and_process_image(
                     request.FILES["custom_currency_icon"], settings.CURRENCY_ICON_MAX_DIMENSION
                 )
-            store.full_clean()  # runs Store.clean() uniqueness check
+            store.full_clean()  # runs Store.clean() uniqueness + pincode check
             store.save()
             store.qr_code = generate_store_qr_code(store)
             store.save(update_fields=["qr_code"])
@@ -140,10 +247,6 @@ def edit_operating_hours(request, slug):
     store = get_object_or_404(Store, slug=slug)
     _require_owner_of(request, store)
 
-    # Guarantee exactly one OperatingHours row per day of the week exists
-    # (defaulting new ones to "closed") before building the formset. This
-    # is what makes the 'day' field safe to lock/disable in the form below
-    # -- there's never an ambiguous blank row for an owner to mis-set.
     existing_days = set(store.operating_hours.values_list("day", flat=True))
     for day_code, _ in OperatingHours.Day.choices:
         if day_code not in existing_days:
@@ -202,7 +305,7 @@ def category_list(request, slug):
 def category_delete(request, slug, pk):
     store = get_object_or_404(Store, slug=slug)
     _require_owner_of(request, store)
-    category = get_object_or_404(Category, pk=pk, store=store)  # scoped to this store -- prevents IDOR
+    category = get_object_or_404(Category, pk=pk, store=store)
     category.delete()
     messages.success(request, "Category deleted.")
     return redirect("stores:category_list", slug=slug)
@@ -243,7 +346,7 @@ def item_create(request, slug):
 def item_edit(request, slug, pk):
     store = get_object_or_404(Store, slug=slug)
     _require_owner_of(request, store)
-    item = get_object_or_404(FoodItem, pk=pk, store=store)  # scoped -- prevents IDOR across stores
+    item = get_object_or_404(FoodItem, pk=pk, store=store)
 
     if request.method == "POST":
         form = FoodItemForm(request.POST, request.FILES, instance=item, store=store)
@@ -270,3 +373,122 @@ def item_delete(request, slug, pk):
     item.delete()
     messages.success(request, "Item removed.")
     return redirect("stores:item_list", slug=slug)
+
+
+# ---------------------------------------------------------------------------
+# Contact Us page
+# ---------------------------------------------------------------------------
+
+def contact_us(request):
+    """
+    Public Contact Us page.
+    Visitors can submit a complaint or concern with their email,
+    phone number, and a message (max 1000 characters).
+    Also displays platform contact information.
+    """
+    if request.method == "POST":
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            ContactMessage.objects.create(
+                name=form.cleaned_data["name"],
+                email=form.cleaned_data["email"],
+                phone_number=form.cleaned_data["phone_number"],
+                message=form.cleaned_data["message"],
+            )
+            messages.success(request, "Your message has been submitted. We will get back to you soon.")
+            return redirect("stores:contact_us")
+    else:
+        form = ContactForm()
+
+    # Platform contact information — change these to your real details
+    platform_info = {
+        "contact_email": "support@yourtrolley.com",
+        "contact_phone": "+66 2 123 4567",
+        "contact_address": "Laem Chabang, Chonburi, Thailand",
+    }
+
+    return render(request, "stores/contact_us.html", {
+        "form": form,
+        "platform_info": platform_info,
+    })
+
+
+def store_list(request):
+    """
+    Public 'Browse Stalls' page.
+    Supports filtering by:
+      - name          (q)      — case-insensitive partial match on store name
+      - store_category(scat)   — dropdown: food, electronics, fashion, etc.
+      - pincode       (pin)    — case-insensitive partial match on store pincode
+      - item          (item_q) — case-insensitive partial match on item name
+    """
+    stores = Store.objects.filter(is_active=True).prefetch_related("operating_hours")
+
+    query = request.GET.get("q", "").strip()
+    store_category = request.GET.get("scat", "").strip()
+    pincode = request.GET.get("pin", "").strip()
+    item_q = request.GET.get("item_q", "").strip()
+
+    if query:
+        stores = stores.filter(name__icontains=query)
+    if store_category:
+        stores = stores.filter(store_category=store_category)
+    if pincode:
+        stores = stores.filter(pincode__icontains=pincode)
+
+    # --- Item Search Logic ---
+    items_page_obj = None
+    if item_q:
+        items = FoodItem.objects.filter(
+            name__icontains=item_q,
+            store__is_active=True,
+            is_available=True
+        ).select_related("store")
+        
+        # Apply the store filters to the item results as well so they match
+        if query:
+            items = items.filter(store__name__icontains=query)
+        if store_category:
+            items = items.filter(store__store_category=store_category)
+        if pincode:
+            items = items.filter(store__pincode__icontains=pincode)
+            
+        items_paginator = Paginator(items, 12)
+        items_page_obj = items_paginator.get_page(request.GET.get("item_page"))
+
+    # Build the store category dropdown from the StoreCategory choices
+    all_store_categories = Store.StoreCategory.choices
+
+    paginator = Paginator(stores, 12)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    # Preserve filter params in pagination links
+    filter_params = []
+    if query:
+        filter_params.append(f"q={query}")
+    if store_category:
+        filter_params.append(f"scat={store_category}")
+    if pincode:
+        filter_params.append(f"pin={pincode}")
+    if item_q:
+        filter_params.append(f"item_q={item_q}")
+    filter_query_string = "&".join(filter_params)
+
+    # Resolve the human-readable label for the selected store category
+    selected_category_label = ""
+    for value, label in all_store_categories:
+        if value == store_category:
+            selected_category_label = label
+            break
+
+    return render(request, "stores/store_list.html", {
+        "page_obj": page_obj,
+        "items_page_obj": items_page_obj,
+        "query": query,
+        "store_category": store_category,
+        "selected_category_label": selected_category_label,
+        "pincode": pincode,
+        "item_q": item_q,
+        "all_store_categories": all_store_categories,
+        "filter_query_string": filter_query_string,
+    })

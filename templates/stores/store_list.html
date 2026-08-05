@@ -1,33 +1,143 @@
 {% extends "base.html" %}
-{% block title %}Browse Food Stalls{% endblock %}
+{% block title %}Browse Stalls & Items{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-4">Browse Food Stalls</h1>
-<form method="get" class="mb-6 flex gap-2">
-  <input type="text" name="q" value="{{ query }}" placeholder="Search stalls..." class="max-w-xs">
-  <button type="submit" class="btn">Search</button>
+
+<h1 class="text-2xl font-bold mb-4">Browse Stalls & Items</h1>
+
+<!-- ===== FILTER FORM ===== -->
+<form method="get" class="mb-6 bg-white rounded-lg shadow-sm p-4 space-y-3">
+  <!-- Changed to 4 columns to accommodate the new item search -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+    
+    <!-- Filter by Item Name (NEW) -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Search by Item</label>
+      <input type="text" name="item_q" value="{{ item_q }}"
+             placeholder="e.g. Burger, Coffee..."
+             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
+    </div>
+
+    <!-- Filter by Name -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Search by Store Name</label>
+      <input type="text" name="q" value="{{ query }}"
+             placeholder="Stall name..."
+             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
+    </div>
+
+    <!-- Filter by Store Category -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Store Category</label>
+      <select name="scat" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
+        <option value="">All store types</option>
+        {% for value, label in all_store_categories %}
+          <option value="{{ value }}" {% if value == store_category %}selected{% endif %}>
+            {{ label }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Filter by Pincode -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Pincode</label>
+      <input type="text" name="pin" value="{{ pincode }}"
+             placeholder="e.g. 201301"
+             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
+    </div>
+  </div>
+
+  <div class="flex gap-2 mt-2">
+    <button type="submit" class="btn">Search &amp; Filter</button>
+    {% if query or pincode or store_category or item_q %}
+      <a href="{% url 'stores:store_list' %}" class="btn btn-secondary">Clear Filters</a>
+    {% endif %}
+  </div>
+
+  <!-- Active filter summary -->
+  {% if query or pincode or store_category or item_q %}
+    <p class="text-sm text-gray-500 mt-2">
+      Filtering by:
+      {% if item_q %}<span class="inline-block bg-orange-100 text-orange-800 rounded px-2 py-0.5 text-xs mr-1">Item: {{ item_q }}</span>{% endif %}
+      {% if query %}<span class="inline-block bg-orange-100 text-orange-800 rounded px-2 py-0.5 text-xs mr-1">Store: {{ query }}</span>{% endif %}
+      {% if store_category %}<span class="inline-block bg-orange-100 text-orange-800 rounded px-2 py-0.5 text-xs mr-1">Category: {{ selected_category_label }}</span>{% endif %}
+      {% if pincode %}<span class="inline-block bg-orange-100 text-orange-800 rounded px-2 py-0.5 text-xs mr-1">Pincode: {{ pincode }}</span>{% endif %}
+    </p>
+  {% endif %}
 </form>
 
+<!-- ===== ITEMS GRID (Only visible if searching for an item) ===== -->
+{% if item_q %}
+  <h2 class="text-xl font-bold mb-4 border-b pb-2">Matching Items</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+    {% for item in items_page_obj %}
+      <!-- Link sends user to the store menu with the item pre-searched -->
+      <a href="{% url 'stores:store_detail' item.store.slug %}?item_q={{ item.name }}" class="card hover:shadow-lg transition block border border-gray-200 rounded-lg bg-white overflow-hidden p-4">
+        <div class="flex gap-4">
+          {% if item.image %}
+            <img src="{{ item.image.url }}" alt="{{ item.name }}" class="w-24 h-24 object-cover rounded-lg flex-shrink-0">
+          {% else %}
+            <div class="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center text-xs text-gray-400 flex-shrink-0">No Image</div>
+          {% endif %}
+          <div>
+            <h3 class="font-bold text-gray-900 leading-tight">{{ item.name }}</h3>
+            <p class="text-sm text-gray-500 mt-1">From: <span class="font-medium text-gray-700">{{ item.store.name }}</span></p>
+            <p class="font-bold text-orange-600 mt-2">{{ item.store.currency_symbol }}{{ item.price }}</p>
+          </div>
+        </div>
+      </a>
+    {% empty %}
+      <p class="text-gray-500 col-span-full">No items found matching "{{ item_q }}".</p>
+    {% endfor %}
+  </div>
+  
+  <!-- Item Pagination -->
+  {% if items_page_obj.has_other_pages %}
+    <div class="mb-8 flex gap-2 justify-center">
+      {% if items_page_obj.has_previous %}
+        <a href="?item_page={{ items_page_obj.previous_page_number }}{% if filter_query_string %}&{{ filter_query_string }}{% endif %}" class="btn btn-secondary text-sm px-3 py-1">Prev Items</a>
+      {% endif %}
+      {% if items_page_obj.has_next %}
+        <a href="?item_page={{ items_page_obj.next_page_number }}{% if filter_query_string %}&{{ filter_query_string }}{% endif %}" class="btn btn-secondary text-sm px-3 py-1">Next Items</a>
+      {% endif %}
+    </div>
+  {% endif %}
+{% endif %}
+
+<!-- ===== STORES GRID ===== -->
+<h2 class="text-xl font-bold mb-4 border-b pb-2">{% if item_q %}Available Stores{% else %}All Stores{% endif %}</h2>
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
   {% for store in page_obj %}
     <a href="{% url 'stores:store_detail' store.slug %}" class="card hover:shadow-lg transition block">
       {% if store.store_picture %}
         <img src="{{ store.store_picture.url }}" alt="{{ store.name }}" class="w-full h-40 object-cover rounded mb-3">
       {% else %}
-        <div class="w-full h-40 bg-orange-100 rounded mb-3 flex items-center justify-center text-4xl">🍽️</div>
+        <div class="w-full h-40 bg-orange-100 rounded mb-3 flex items-center justify-center text-4xl"></div>
       {% endif %}
       <h2 class="font-semibold text-lg">{{ store.name }}</h2>
-      <p class="text-sm text-gray-500 truncate">{{ store.address }}</p>
+      <span class="inline-block bg-blue-100 text-blue-800 text-xs rounded-full px-2 py-0.5 mt-1">
+        {{ store.get_store_category_display }}
+      </span>
+      <p class="text-sm text-gray-500 truncate mt-1">{{ store.address }}</p>
+      <p class="text-xs text-gray-400 mt-0.5">Pincode: {{ store.pincode }}</p>
       <p class="text-xs mt-1 {% if store.is_open_now %}text-green-600{% else %}text-red-500{% endif %}">
         {% if store.is_open_now %}Open now{% else %}Closed{% endif %}
       </p>
     </a>
   {% empty %}
-    <p class="text-gray-500">No stalls found.</p>
+    <p class="text-gray-500 col-span-full">
+      No stalls found matching your filters.
+    </p>
   {% endfor %}
 </div>
 
+<!-- ===== STORE PAGINATION ===== -->
 <div class="mt-6 flex gap-2 justify-center">
-  {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&q={{ query }}" class="btn btn-secondary">Prev</a>{% endif %}
-  {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&q={{ query }}" class="btn btn-secondary">Next</a>{% endif %}
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if filter_query_string %}&{{ filter_query_string }}{% endif %}" class="btn btn-secondary">Prev</a>
+  {% endif %}
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if filter_query_string %}&{{ filter_query_string }}{% endif %}" class="btn btn-secondary">Next</a>
+  {% endif %}
 </div>
 {% endblock %}
