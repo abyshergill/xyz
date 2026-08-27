@@ -3,22 +3,14 @@ from django.forms import inlineformset_factory
 
 from .models import Category, FoodItem, OperatingHours, Store
 
-
 class StoreForm(forms.ModelForm):
     class Meta:
         model = Store
         fields = [
-            "name",
-            "description",
-            "store_picture",
-            "pincode",
-            "store_category",
-            "currency_code",
-            "custom_currency_symbol",
-            "custom_currency_icon",
-            "require_table_number",
-            "require_phone_number",
-            "require_email",
+            "name", "store_category", "pincode", "description", "store_picture", 
+            "address", "phone_number", "currency_code", "custom_currency_symbol", 
+            "custom_currency_icon", "require_table_number", "require_phone_number", 
+            "require_email", "require_customer_name", "require_customer_address",
         ]
         widgets = {
             "description": forms.Textarea(attrs={"rows": 4}),
@@ -70,15 +62,7 @@ class CategoryForm(forms.ModelForm):
 class FoodItemForm(forms.ModelForm):
     class Meta:
         model = FoodItem
-        fields = [
-            "category",
-            "name",
-            "description",
-            "price",
-            "stock_quantity",
-            "image",
-            "is_available",
-        ]
+        fields = ["category", "name", "description", "price", "tax_percentage", "stock_quantity", "image", "is_available"]
         widgets = {"description": forms.Textarea(attrs={"rows": 3})}
 
     def __init__(self, *args, store=None, **kwargs):

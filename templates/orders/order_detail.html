@@ -9,11 +9,14 @@
 
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
   <div class="card">
-    <p><span class="text-gray-500">Status:</span> <span class="font-semibold">{{ order.get_status_display }}</span></p>
-    <p><span class="text-gray-500">Table:</span> {{ order.table_number|default:"—" }}</p>
-    <p><span class="text-gray-500">Phone:</span> {{ order.contact_phone|default:"—" }}</p>
-    <p><span class="text-gray-500">Email:</span> {{ order.contact_email|default:"—" }}</p>
-  </div>
+                <p><span class="text-gray-500">Status:</span> <span class="font-semibold">{{ order.get_status_display }}</span></p>
+                <p><span class="text-gray-500">Customer:</span> {{ order.customer_name|default:"—" }}</p>
+                <p><span class="text-gray-500">Address:</span> {{ order.customer_address|default:"—" }}</p>
+                <p><span class="text-gray-500">Table:</span> {{ order.table_number|default:"—" }}</p>
+                <p><span class="text-gray-500">Phone:</span> {{ order.contact_phone|default:"—" }}</p>
+                <p><span class="text-gray-500">Email:</span> {{ order.contact_email|default:"—" }}</p>
+                <p><span class="text-gray-500">Remarks:</span> {{ order.remarks|default:"—" }}</p>
+            </div>
   <div class="card">
     <p><span class="text-gray-500">Subtotal:</span> {% currency order.store order.subtotal %}</p>
     <p><span class="text-gray-500">Tax:</span> {% currency order.store order.tax_total %}</p>
@@ -45,11 +48,21 @@
 
 <h2 class="font-semibold mb-2">Items</h2>
 <div class="card mb-4">
-  <ul class="divide-y text-sm">
-    {% for item in order.items.all %}
-      <li class="py-1 flex justify-between"><span>{{ item.quantity }} &times; {{ item.item_name_snapshot }}</span><span>{% currency order.store item.line_total %}</span></li>
-    {% endfor %}
-  </ul>
+<ul class="divide-y text-sm">
+                {% for item in order.items.all %}
+                <li class="py-2">
+                    <div class="flex justify-between">
+                        <span>{{ item.quantity }} &times; {{ item.item_name_snapshot }}</span>
+                        <span>{% currency order.store item.line_total_with_tax %}</span>
+                    </div>
+                    {% if item.tax_percentage_snapshot > 0 %}
+                    <div class="text-xs text-gray-400 pl-2">Tax: {{ item.tax_percentage_snapshot }}% = {% currency order.store item.tax_amount %} (base: {% currency order.store item.line_total %})</div>
+                    {% else %}
+                    <div class="text-xs text-gray-400 pl-2">incl. tax (price is final)</div>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
 </div>
 
 {% if child_orders %}

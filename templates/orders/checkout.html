@@ -8,34 +8,48 @@
   <h2 class="font-semibold mb-3">Your Cart</h2>
   <div class="divide-y">
     {% for line in cart_lines %}
-      <div class="py-3 flex items-center gap-3">
-        {% if line.item.image %}
-          <img src="{{ line.item.image.url }}" alt="{{ line.item.name }}" class="w-16 h-16 object-cover rounded flex-shrink-0">
-        {% else %}
-          <div class="w-16 h-16 bg-orange-100 rounded flex items-center justify-center text-2xl flex-shrink-0">🍽️</div>
-        {% endif %}
-        <div class="flex-1 min-w-0">
-          <p class="font-medium truncate">{{ line.item.name }}</p>
-          <p class="text-sm text-gray-500">{{ line.quantity }} &times; {% currency store line.item.price %}</p>
-        </div>
-        <p class="font-semibold whitespace-nowrap">{% currency store line.line_total %}</p>
-        <form method="post" action="{% url 'orders:remove_from_cart' store.slug %}">
-          {% csrf_token %}
-          <input type="hidden" name="food_item_id" value="{{ line.item.pk }}">
-          <button type="submit" class="btn-danger text-xs px-2 py-1" title="Remove">Remove</button>
-        </form>
-      </div>
-    {% endfor %}
+            <div class="py-3 flex items-center gap-3">
+                {% if line.item.image %}
+                <img src="{{ line.item.image.url }}" alt="{{ line.item.name }}" class="w-16 h-16 object-cover rounded flex-shrink-0">
+                {% else %}
+                <div class="w-16 h-16 bg-orange-100 rounded flex items-center justify-center text-2xl flex-shrink-0">🍽️</div>
+                {% endif %}
+                <div class="flex-1 min-w-0">
+                    <p class="font-medium truncate">{{ line.item.name }}</p>
+                    <p class="text-sm text-gray-500">
+                        {{ line.quantity }} &times; {% currency store line.item.price %}
+                        {% if line.item.tax_percentage > 0 %}
+                        <span class="text-orange-600">(+ {{ line.item.tax_percentage }}% tax)</span>
+                        {% else %}
+                        <span class="text-gray-400">(incl. tax)</span>
+                        {% endif %}
+                    </p>
+                    {% if line.line_tax > 0 %}
+                    <p class="text-xs text-gray-400">Tax: {% currency store line.line_tax %}</p>
+                    {% endif %}
+                </div>
+                <div class="text-right">
+                    <p class="font-semibold whitespace-nowrap">{% currency store line.line_total_with_tax %}</p>
+                    {% if line.line_tax > 0 %}
+                    <p class="text-xs text-gray-400">base: {% currency store line.line_total %}</p>
+                    {% endif %}
+                </div>
+                <form method="post" action="{% url 'orders:remove_from_cart' store.slug %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="food_item_id" value="{{ line.item.pk }}">
+                    <button type="submit" class="btn-danger text-xs px-2 py-1" title="Remove">Remove</button>
+                </form>
+            </div>
+            {% endfor %}
   </div>
 
   <div class="border-t mt-3 pt-3 text-sm space-y-1">
-    <div class="flex justify-between"><span class="text-gray-500">Subtotal</span><span>{% currency store subtotal %}</span></div>
-    {% if tax_total %}
-      <div class="flex justify-between"><span class="text-gray-500">Estimated tax</span><span>{% currency store tax_total %}</span></div>
-    {% endif %}
-    <div class="flex justify-between font-bold text-base"><span>Estimated Total</span><span>{% currency store estimated_total %}</span></div>
+                <div class="flex justify-between"><span class="text-gray-500">Subtotal (base prices)</span><span>{% currency store subtotal %}</span></div>
+                {% if tax_total %}
+                <div class="flex justify-between"><span class="text-gray-500">Tax</span><span>{% currency store tax_total %}</span></div>
+                {% endif %}
+                <div class="flex justify-between font-bold text-base"><span>Total (incl. tax)</span><span>{% currency store estimated_total %}</span></div>
   </div>
-</div>
 
 <form method="post" class="card max-w-md">
   {% csrf_token %}

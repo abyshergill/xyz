@@ -16,15 +16,8 @@ PERIOD_TRUNC = {
 }
 PERIOD_LOOKBACK_DAYS = {"daily": 30, "weekly": 90, "monthly": 365}
 
-
 @login_required
 def owner_analytics_dashboard(request):
-    """
-    Renders the CRM/analytics page. Numerical summaries are computed with
-    the Django ORM's aggregation functions (Sum, F expressions) rather than
-    raw SQL, so the endpoint is inherently protected from SQL injection.
-    Chart.js on the frontend consumes the JSON payloads embedded below.
-    """
     store = request.user.stores.first()
     if not store:
         return redirect("stores:create_store")
@@ -36,13 +29,15 @@ def owner_analytics_dashboard(request):
     trunc_fn = PERIOD_TRUNC[period]
     since = timezone.now() - timedelta(days=PERIOD_LOOKBACK_DAYS[period])
 
-    completed_orders = Order.objects.filter(
-        store=store, status=Order.Status.COMPLETED, created_at__gte=since,
-    )
+    # Include all active orders (exclude only cancelled)
+    active_orders = Order.objects.filter(
+        store=store,
+        created_at__gte=since,
+    ).exclude(status=Order.Status.CANCELLED)
 
     # --- Sales over time ---
     sales_over_time = (
-        completed_orders
+        active_orders
         .annotate(period=trunc_fn("created_at"))
         .values("period")
         .annotate(total=Sum("grand_total"))
@@ -52,7 +47,11 @@ def owner_analytics_dashboard(request):
     # --- Item-wise sales ---
     item_sales = (
         OrderItem.objects
-        .filter(order__store=store, order__status=Order.Status.COMPLETED, order__created_at__gte=since)
+        .filter(
+            order__store=store,
+            order__created_at__gte=since,
+        )
+        .exclude(order__status=Order.Status.CANCELLED)
         .values("item_name_snapshot")
         .annotate(
             quantity_sold=Sum("quantity"),
@@ -64,7 +63,11 @@ def owner_analytics_dashboard(request):
     # --- Category-wise sales ---
     category_sales = (
         OrderItem.objects
-        .filter(order__store=store, order__status=Order.Status.COMPLETED, order__created_at__gte=since)
+        .filter(
+            order__store=store,
+            order__created_at__gte=since,
+        )
+        .exclude(order__status=Order.Status.CANCELLED)
         .values("food_item__category__name")
         .annotate(
             revenue=Sum(F("unit_price_snapshot") * F("quantity"), output_field=DecimalField()),
@@ -72,7 +75,7 @@ def owner_analytics_dashboard(request):
         .order_by("-revenue")
     )
 
-    summary = completed_orders.aggregate(
+    summary = active_orders.aggregate(
         total_revenue=Sum("grand_total"),
         total_orders=Count("id"),
     )

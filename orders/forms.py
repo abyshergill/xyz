@@ -6,21 +6,30 @@ from .models import Order
 
 class CheckoutContactForm(forms.ModelForm):
     """
-    Dynamically requires table_number / contact_phone / contact_email based
-    on the store's configured checkout requirements (see Store.require_*).
+    Dynamically requires table_number / contact_phone / contact_email /
+    customer_name / customer_address based on the store configured
+    checkout requirements (see Store.require_*).
+    Also includes a remarks field for customer notes.
     """
 
     class Meta:
         model = Order
-        fields = ["table_number", "contact_phone", "contact_email"]
+        fields = ["customer_name", "customer_address", "table_number", "contact_phone", "contact_email", "remarks"]
 
     def __init__(self, *args, store=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.store = store
         if store:
+            self.fields["customer_name"].required = store.require_customer_name
+            self.fields["customer_address"].required = store.require_customer_address
             self.fields["table_number"].required = store.require_table_number
             self.fields["contact_phone"].required = store.require_phone_number
             self.fields["contact_email"].required = store.require_email
+
+            if not store.require_customer_name:
+                self.fields["customer_name"].widget = forms.HiddenInput()
+            if not store.require_customer_address:
+                self.fields["customer_address"].widget = forms.HiddenInput()
             if not store.require_table_number:
                 self.fields["table_number"].widget = forms.HiddenInput()
             if not store.require_phone_number:
@@ -28,7 +37,21 @@ class CheckoutContactForm(forms.ModelForm):
             if not store.require_email:
                 self.fields["contact_email"].widget = forms.HiddenInput()
 
+        # Add Tailwind classes to all visible fields
+        for field_name in self.fields:
+            field = self.fields[field_name]
+            if not isinstance(field.widget, forms.HiddenInput):
+                existing = field.widget.attrs.get("class", "")
+                field.widget.attrs["class"] = f"{existing} w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none".strip()
+                if field_name == "remarks":
+                    field.widget.attrs["rows"] = "3"
+                    field.widget.attrs["placeholder"] = "Any special requests or notes for this order..."
+                if field_name == "customer_address":
+                    field.widget.attrs["placeholder"] = "Delivery address..."
+                if field_name == "customer_name":
+                    field.widget.attrs["placeholder"] = "Your full name"
 
+                    
 class CartItemForm(forms.Form):
     """One row of a submitted cart: a food item id + desired quantity."""
 

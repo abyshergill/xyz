@@ -11,13 +11,14 @@
 # Replace "yourtrolley.example.com" with your real domain before deploying.
 
 # yourtrolley.example.com, www.yourtrolley.example.com {
-localhost {
+# localhost {
+http://143.198.161.140 {
     encode zstd gzip
 
     # Security headers (defence-in-depth alongside Django's own security
     # middleware -- see SECURE_* settings in config/settings.py).
     header {
-        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+       # Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
         Referrer-Policy "same-origin"

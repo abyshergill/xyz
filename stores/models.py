@@ -86,9 +86,14 @@ class Store(models.Model):
         max_length=10,
         blank=False,
         null=False,
-        default="",  # needed so existing rows don't break during migration
+        default="",
         help_text="Required. Customers can search for your store by pincode.",
     )
+
+    # ===== ADD THESE TWO LINES =====
+    address = models.CharField(max_length=255, blank=True)
+    phone_number = models.CharField(max_length=16, blank=True)
+    # ===============================
 
 
     # Currency: pick a common one, or go CUSTOM and supply a text symbol
@@ -108,6 +113,8 @@ class Store(models.Model):
     require_table_number = models.BooleanField(default=True)
     require_phone_number = models.BooleanField(default=True)
     require_email = models.BooleanField(default=False)
+    require_customer_name = models.BooleanField(default=False, help_text="Ask for the customer's name at checkout.")
+    require_customer_address = models.BooleanField(default=False, help_text="Ask for the customer's address at checkout.")
 
     is_active = models.BooleanField(default=True, help_text="Owner can temporarily deactivate the store.")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -232,6 +239,10 @@ class FoodItem(models.Model):
     name = models.CharField(max_length=150)
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=8, decimal_places=2)
+    tax_percentage = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0,
+        help_text="Tax % for this item (e.g. 7.00 for 7%). Set to 0 if price is final (no tax).",
+    )
     stock_quantity = models.PositiveIntegerField(default=0)
     image = models.ImageField(upload_to=food_item_image_path, blank=True, null=True)
     is_available = models.BooleanField(default=True)

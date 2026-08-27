@@ -50,7 +50,9 @@ class Order(models.Model):
     table_number = models.CharField(max_length=20, blank=True)
     contact_phone = models.CharField(max_length=16, blank=True)
     contact_email = models.EmailField(blank=True)
-
+    customer_name = models.CharField(max_length=150, blank=True)
+    customer_address = models.CharField(max_length=255, blank=True)
+    remarks = models.CharField(max_length=500, blank=True)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
 
     # Order merging: when several active orders are consolidated onto a
@@ -83,13 +85,21 @@ class Order(models.Model):
         return self.merged_orders.exists()
 
     @property
-    def is_merged_child(self):
-        return self.merged_into_id is not None
+    def line_total(self):
+        """Base price only (unit_price x quantity). Used for subtotal."""
+        return self.unit_price_snapshot * self.quantity
+
+    @property
+    def line_total_with_tax(self):
+        """Base price + tax. This is what the customer pays for this line."""
+        return self.line_total + self.tax_amount
+
 
     def recalculate_totals(self, commit=True):
         """
         Recomputes subtotal/tax/grand_total from line items (+ merged child
-        orders, if this is a master ticket) and the store's active tax rules.
+        orders, if this is a master ticket). Tax is calculated per-item
+        based on each OrderItem tax_percentage_snapshot.
         """
         with transaction.atomic():
             items = OrderItem.objects.filter(order=self)
@@ -98,17 +108,14 @@ class Order(models.Model):
                     models.Q(order=self) | models.Q(order__merged_into=self)
                 )
             subtotal = sum((i.line_total for i in items), start=0)
-
-            tax_total = 0
-            for tax in self.store.tax_configurations.filter(is_active=True):
-                tax_total += tax.apply(subtotal)
-
+            # Per-item tax: each item tax_amount is already computed in OrderItem.save()
+            tax_total = sum((i.tax_amount for i in items), start=0)
             self.subtotal = subtotal
             self.tax_total = tax_total
             self.grand_total = subtotal + tax_total
             if commit:
                 self.save(update_fields=["subtotal", "tax_total", "grand_total", "updated_at"])
-        return self.grand_total
+            return self.grand_total
 
 
 class OrderItem(models.Model):
@@ -117,17 +124,29 @@ class OrderItem(models.Model):
     item_name_snapshot = models.CharField(max_length=150)
     unit_price_snapshot = models.DecimalField(max_digits=8, decimal_places=2)
     quantity = models.PositiveIntegerField(validators=[MinValueValidator(1)])
-
+    unit_price_snapshot = models.DecimalField(max_digits=8, decimal_places=2)
+    tax_percentage_snapshot = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     def save(self, *args, **kwargs):
         if not self.item_name_snapshot:
             self.item_name_snapshot = self.food_item.name
         if not self.unit_price_snapshot:
             self.unit_price_snapshot = self.food_item.price
+        if not self.tax_percentage_snapshot and self.food_item_id:
+            self.tax_percentage_snapshot = self.food_item.tax_percentage or 0
+        # Calculate per-item tax amount
+        self.tax_amount = (self.line_total * self.tax_percentage_snapshot) / 100
         super().save(*args, **kwargs)
+
 
     @property
     def line_total(self):
         return self.unit_price_snapshot * self.quantity
+
+    # @property
+    # def line_total_with_tax(self):
+    #     """Base price + tax. This is what the customer pays for this line."""
+    #     return self.line_total + self.tax_amount
 
     def __str__(self):
         return f"{self.quantity} x {self.item_name_snapshot}"

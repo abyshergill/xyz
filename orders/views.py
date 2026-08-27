@@ -49,16 +49,27 @@ def checkout(request, slug):
     # from the session cart rather than erroring the whole page out.
     cart_lines = []
     subtotal = Decimal("0")
+    tax_total = Decimal("0")
     stale_ids = []
     for food_item_id_str, quantity in cart_raw.items():
         item = FoodItem.objects.filter(pk=food_item_id_str, store=store).first()
         if not item:
             stale_ids.append(food_item_id_str)
             continue
-        line_total = item.price * quantity
-        subtotal += line_total
-        cart_lines.append({"item": item, "quantity": quantity, "line_total": line_total})
-
+        line_base = item.price * quantity
+        tax_rate = getattr(item, 'tax_percentage', 0) or 0
+        line_tax = (line_base * tax_rate) / 100
+       # line_tax = (line_base * (item.tax_percentage or 0)) / 100
+        line_total_with_tax = line_base + line_tax
+        subtotal += line_base
+        tax_total += line_tax
+        cart_lines.append({
+            "item": item,
+            "quantity": quantity,
+            "line_total": line_base,
+            "line_tax": line_tax,
+            "line_total_with_tax": line_total_with_tax,
+        })
     if stale_ids:
         for sid in stale_ids:
             cart_raw.pop(sid, None)
@@ -69,9 +80,6 @@ def checkout(request, slug):
         messages.error(request, "Your cart is empty.")
         return redirect("stores:store_detail", slug=slug)
 
-    tax_total = Decimal("0")
-    for tax in store.tax_configurations.filter(is_active=True):
-        tax_total += tax.apply(subtotal)
     estimated_total = subtotal + tax_total
 
     if request.method == "POST":
@@ -92,10 +100,13 @@ def checkout(request, slug):
                     cart_rows=cart_rows,
                     customer=customer,
                     contact_fields={
-                        "table_number": form.cleaned_data.get("table_number", ""),
-                        "contact_phone": form.cleaned_data.get("contact_phone", ""),
-                        "contact_email": form.cleaned_data.get("contact_email", ""),
-                    },
+                    "customer_name": form.cleaned_data.get("customer_name", ""),
+                    "customer_address": form.cleaned_data.get("customer_address", ""),
+                    "table_number": form.cleaned_data.get("table_number", ""),
+                    "contact_phone": form.cleaned_data.get("contact_phone", ""),
+                    "contact_email": form.cleaned_data.get("contact_email", ""),
+                    "remarks": form.cleaned_data.get("remarks", ""),
+                },
                 )
             except OrderMergeError as exc:  # reused as generic "stock" error type
                 messages.error(request, str(exc))
@@ -156,18 +167,33 @@ def order_confirmation(request, order_number):
     return render(request, "orders/order_confirmation.html", {"order": order})
 
 
+@require_http_methods(["GET"])
 def order_bill(request, order_number):
     """
-    Downloadable PDF receipt. Publicly accessible by order_number (matching
+    Downloadable PDF receipt.
+    Publicly accessible by order_number (matching
     order_confirmation's access model) since checkout supports guest
-    customers with no account to log into. Order numbers are generated from
+    customers with no account to log into.
+    Order numbers are generated from
     a random UUID and are not sequential/guessable.
     """
     order = get_object_or_404(Order, order_number=order_number)
-    pdf_bytes = generate_order_bill_pdf(order)
+
+    try:
+        pdf_bytes = generate_order_bill_pdf(order)
+    except Exception:
+        logger.exception("Failed to generate PDF bill for order %s", order_number)
+        messages.error(
+            request,
+            "Sorry, we couldn't generate your bill. Please try again or contact the store.",
+        )
+        return redirect("orders:order_confirmation", order_number=order_number)
+
     response = HttpResponse(pdf_bytes, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="receipt_{order.order_number}.pdf"'
+    response["Content-Length"] = len(pdf_bytes)
     return response
+
 
 
 def track_order(request):
