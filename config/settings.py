@@ -26,7 +26,7 @@ SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-CHANGE-ME-IN-PROD
 
 DEBUG = env.bool("DEBUG", default=True)
 
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["143.198.161.140", "localhost", "127.0.0.1"])
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["calcomp.ai", "www.calcomp.ai", "143.198.161.140", "localhost", "127.0.0.1"])
 
 # ---------------------------------------------------------------------------
 # Applications
