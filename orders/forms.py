@@ -100,3 +100,30 @@ class OrderMergeForm(forms.Form):
         if orders.count() < 2:
             raise forms.ValidationError("Select at least two orders to merge.")
         return orders
+
+class ManualOrderForm(forms.Form):
+    """Owner manually creates an order with customer info."""
+    customer_name = forms.CharField(max_length=150, required=False, widget=forms.TextInput(attrs={"placeholder": "Customer name", "class": "w-full px-3 py-2 border border-gray-300 rounded-lg outline-none"}))
+    customer_address = forms.CharField(max_length=255, required=False, widget=forms.TextInput(attrs={"placeholder": "Address", "class": "w-full px-3 py-2 border border-gray-300 rounded-lg outline-none"}))
+    table_number = forms.CharField(max_length=20, required=False, widget=forms.TextInput(attrs={"placeholder": "Table number", "class": "w-full px-3 py-2 border border-gray-300 rounded-lg outline-none"}))
+    contact_phone = forms.CharField(max_length=16, required=False, widget=forms.TextInput(attrs={"placeholder": "Phone", "class": "w-full px-3 py-2 border border-gray-300 rounded-lg outline-none"}))
+    contact_email = forms.EmailField(required=False, widget=forms.EmailInput(attrs={"placeholder": "Email", "class": "w-full px-3 py-2 border border-gray-300 rounded-lg outline-none"}))
+    remarks = forms.CharField(max_length=500, required=False, widget=forms.Textarea(attrs={"rows": 2, "placeholder": "Remarks", "class": "w-full px-3 py-2 border border-gray-300 rounded-lg outline-none"}))
+    status = forms.ChoiceField(choices=Order.Status.choices, initial=Order.Status.PENDING, widget=forms.Select(attrs={"class": "px-3 py-2 border border-gray-300 rounded-lg outline-none"}))
+
+
+class OrderEditForm(forms.Form):
+    """Owner edits existing order customer info."""
+    customer_name = forms.CharField(max_length=150, required=False, widget=forms.TextInput(attrs={"class": "w-full px-3 py-2 border border-gray-300 rounded-lg outline-none"}))
+    customer_address = forms.CharField(max_length=255, required=False, widget=forms.TextInput(attrs={"class": "w-full px-3 py-2 border border-gray-300 rounded-lg outline-none"}))
+    table_number = forms.CharField(max_length=20, required=False, widget=forms.TextInput(attrs={"class": "w-full px-3 py-2 border border-gray-300 rounded-lg outline-none"}))
+    contact_phone = forms.CharField(max_length=16, required=False, widget=forms.TextInput(attrs={"class": "w-full px-3 py-2 border border-gray-300 rounded-lg outline-none"}))
+    contact_email = forms.EmailField(required=False, widget=forms.EmailInput(attrs={"class": "w-full px-3 py-2 border border-gray-300 rounded-lg outline-none"}))
+    remarks = forms.CharField(max_length=500, required=False, widget=forms.Textarea(attrs={"rows": 2, "class": "w-full px-3 py-2 border border-gray-300 rounded-lg outline-none"}))
+    status = forms.ChoiceField(choices=Order.Status.choices, widget=forms.Select(attrs={"class": "px-3 py-2 border border-gray-300 rounded-lg outline-none"}))
+
+
+class ManualOrderItemForm(forms.Form):
+    """One row for selecting an item + quantity in manual order creation."""
+    food_item = forms.ChoiceField(choices=[], widget=forms.Select(attrs={"class": "w-full px-3 py-2 border border-gray-300 rounded-lg outline-none"}))
+    quantity = forms.IntegerField(min_value=1, max_value=99, initial=1, widget=forms.NumberInput(attrs={"class": "w-20 px-3 py-2 border border-gray-300 rounded-lg outline-none"}))

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Change Username{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto card">
+    <h1 class="text-xl font-bold mb-4">Change Username</h1>
+    <p class="text-sm text-gray-500 mb-4">Current username: <span class="font-medium">{{ current_username }}</span></p>
+    <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="block text-sm font-medium mb-1">New Username</label>
+            {{ form.username }}
+            {% if form.username.help_text %}<p class="text-xs text-gray-400 mt-1">{{ form.username.help_text }}</p>{% endif %}
+            {% for error in form.username.errors %}<p class="text-red-600 text-xs">{{ error }}</p>{% endfor %}
+        </div>
+        <div class="flex gap-2">
+            <button type="submit" class="btn">Update Username</button>
+            <a href="{% url 'accounts:profile' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

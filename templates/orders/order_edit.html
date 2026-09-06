@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load currency_tags %}
+{% block title %}Edit Order {{ order.order_number }}{% endblock %}
+{% block content %}
+
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-xl font-bold mb-4">Edit Order &mdash; {{ order.order_number }}</h1>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="card mb-4 space-y-3">
+            <h2 class="font-semibold mb-2">Customer Information</h2>
+            {% for field in form %}
+            <div>
+                <label class="block text-sm font-medium mb-1">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}<p class="text-red-600 text-xs">{{ error }}</p>{% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="flex gap-2">
+            <button type="submit" class="btn">Save Changes</button>
+            <a href="{% url 'orders:order_detail' order.order_number %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

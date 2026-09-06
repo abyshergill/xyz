@@ -1,24 +1,150 @@
 {% extends "base.html" %}
 {% block title %}{% if is_create %}Create Store{% else %}Edit Store{% endif %}{% endblock %}
 {% block content %}
-<div class="max-w-lg mx-auto card">
-  <h1 class="text-xl font-bold mb-4">{% if is_create %}Create Your Store{% else %}Edit Store{% endif %}</h1>
-  <form method="post" enctype="multipart/form-data" novalidate>
+<div class="max-w-2xl mx-auto">
+
+  <!-- Header -->
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-2xl">
+      {% if is_create %}🏪{% else %}✏️{% endif %}
+    </div>
+    <div>
+      <h1 class="text-xl font-bold">{% if is_create %}Create Your Store{% else %}Edit Store{% endif %}</h1>
+      <p class="text-sm text-gray-500">{% if is_create %}Set up your stall to start selling{% else %}Update your store details{% endif %}</p>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" novalidate class="space-y-4">
     {% csrf_token %}
-    {% for field in form %}
-      <div class="mb-3">
-        {% if field.field.widget.input_type == "checkbox" %}
-          <label class="inline-flex items-center gap-2">{{ field }} {{ field.label }}</label>
-        {% else %}
-          <label class="block text-sm font-medium mb-1">{{ field.label }}</label>
-          {{ field }}
-        {% endif %}
-        {% if field.help_text %}<p class="text-xs text-gray-500 mt-1">{{ field.help_text }}</p>{% endif %}
-        {% for error in field.errors %}<p class="text-red-600 text-xs">{{ error }}</p>{% endfor %}
+
+    <!-- ===== BASIC INFO ===== -->
+    <div class="card">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Basic Information</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {% for field in form %}
+          {% if field.name in "name,store_category,description" %}
+          <div class="{% if field.name == 'description' %}sm:col-span-2{% endif %}">
+            <label class="block text-sm font-medium mb-1">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<p class="text-xs text-gray-400 mt-1">{{ field.help_text }}</p>{% endif %}
+            {% for error in field.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+          </div>
+          {% endif %}
+        {% endfor %}
       </div>
-    {% endfor %}
-    <p class="text-xs text-gray-500 -mt-2 mb-3">Custom symbol / icon fields only apply when Currency is set to "Custom".</p>
-    <button type="submit" class="btn w-full">Save Store</button>
+    </div>
+
+    <!-- ===== LOCATION ===== -->
+    <div class="card">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Location & Contact</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {% for field in form %}
+          {% if field.name in "pincode,address,phone_number,timezone" %}
+          <div class="{% if field.name == 'address' %}sm:col-span-2{% endif %}">
+            <label class="block text-sm font-medium mb-1">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<p class="text-xs text-gray-400 mt-1">{{ field.help_text }}</p>{% endif %}
+            {% for error in field.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- ===== STORE IMAGE ===== -->
+    <div class="card">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Store Picture</h2>
+      {% for field in form %}
+        {% if field.name == "store_picture" %}
+        <div>
+          <label class="block text-sm font-medium mb-2">{{ field.label }}</label>
+
+          <!-- Image preview area -->
+          <div id="image-preview-wrapper" class="mb-3 {% if not store.store_picture %}hidden{% endif %}">
+            <img id="image-preview"
+                 src="{% if store.store_picture %}{{ store.store_picture.url }}{% endif %}"
+                 alt="Store preview"
+                 class="w-full max-w-xs h-40 object-cover rounded-lg border">
+            <p id="image-filename" class="text-xs text-gray-400 mt-1 truncate"></p>
+          </div>
+
+          <!-- Custom upload button (hides the ugly native input) -->
+          <label for="id_store_picture" class="inline-flex items-center gap-2 text-sm font-medium text-white bg-orange-600 px-4 py-2.5 rounded-lg hover:bg-orange-700 transition cursor-pointer">
+            📷 Choose Image
+          </label>
+          <input type="file" name="store_picture" accept="image/*" id="id_store_picture"
+                 class="hidden"
+                 onchange="previewImage(this)">
+          {% if field.help_text %}<p class="text-xs text-gray-400 mt-2">{{ field.help_text }}</p>{% endif %}
+          {% for error in field.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+
+    <!-- ===== CURRENCY ===== -->
+    <div class="card">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Currency Settings</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {% for field in form %}
+          {% if field.name in "currency_code,custom_currency_symbol,custom_currency_icon" %}
+          <div class="overflow-hidden">
+            <label class="block text-sm font-medium mb-1">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<p class="text-xs text-gray-400 mt-1">{{ field.help_text }}</p>{% endif %}
+            {% for error in field.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+      <p class="text-xs text-gray-400 mt-2">Custom symbol / icon fields only apply when Currency is set to "Custom".</p>
+    </div>
+
+    <!-- ===== CHECKOUT SETTINGS ===== -->
+    <div class="card">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Checkout Settings</h2>
+      <p class="text-xs text-gray-400 mb-4">Choose which fields customers must fill at checkout.</p>
+      <div class="space-y-3">
+        {% for field in form %}
+          {% if field.name == "require_table_number" or field.name == "require_phone_number" or field.name == "require_email" or field.name == "require_customer_name" or field.name == "require_customer_address" or field.name == "accept_orders_when_closed" %}
+          <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition gap-3">
+            <div class="min-w-0 flex-1">
+              <label class="text-sm font-medium cursor-pointer block truncate">{{ field.label }}</label>
+              {% if field.help_text %}<p class="text-xs text-gray-400 mt-0.5">{{ field.help_text }}</p>{% endif %}
+            </div>
+            <div class="flex-shrink-0">
+              {{ field }}
+            </div>
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+
+    <!-- ===== SUBMIT ===== -->
+    <button type="submit" class="btn w-full text-base">
+      {% if is_create %}🏪 Create Store{% else %}Save Changes{% endif %}
+    </button>
+
   </form>
-</div>
+</div><script>
+function previewImage(input) {
+    var preview = document.getElementById('image-preview');
+    var wrapper = document.getElementById('image-preview-wrapper');
+    var filename = document.getElementById('image-filename');
+
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            wrapper.classList.remove('hidden');
+            filename.textContent = input.files[0].name;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
+
 {% endblock %}

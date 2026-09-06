@@ -9,11 +9,13 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_http_methods
+from django.http import HttpResponse, JsonResponse
 
 from stores.models import FoodItem, Store
 
-from .forms import CheckoutContactForm, OrderMergeForm, OrderTrackingForm
-from .models import Order
+from .forms import CheckoutContactForm, ManualOrderForm, ManualOrderItemForm, OrderEditForm, OrderMergeForm, OrderTrackingForm
+from .models import Order, OrderItem
+from stores.models import Notification
 from .services import OrderMergeError, create_order_with_items, generate_order_bill_pdf, merge_orders
 
 logger = logging.getLogger("orders")
@@ -35,7 +37,7 @@ def _require_owner_of(request, store):
 def checkout(request, slug):
     store = get_object_or_404(Store, slug=slug, is_active=True)
 
-    if not store.is_open_now():
+    if not store.is_open_now() and not store.accept_orders_when_closed:
         messages.error(request, f"{store.name} is currently closed and cannot accept orders.")
         return redirect("stores:store_detail", slug=slug)
 
@@ -114,15 +116,40 @@ def checkout(request, slug):
 
             del request.session[f"cart_{store.slug}"]
             request.session.modified = True
+
+            # Notify the store owner about the new order
+            Notification.objects.create(
+                user=store.owner,
+                notification_type=Notification.Type.NEW_ORDER,
+                title=f"New order: {order.order_number}",
+                message=f"Order {order.order_number} has been placed with {order.items.count()} items. Total: {order.grand_total}",
+                order=order,
+            )
+
             logger.info("Order placed: %s at store=%s", order.order_number, store.slug)
             messages.success(request, f"Order placed! Your order number is {order.order_number}.")
             return redirect("orders:order_confirmation", order_number=order.order_number)
+
     else:
-        form = CheckoutContactForm(store=store)
+        # Pre-fill form for logged-in customers
+        initial_data = {}
+        if request.user.is_authenticated and request.user.is_customer_role:
+            initial_data = {
+                "customer_name": request.user.full_name or request.user.username,
+                "contact_phone": request.user.mobile_number or "",
+                "contact_email": request.user.email or "",
+            }
+        form = CheckoutContactForm(store=store, initial=initial_data)
+
+    # Pass saved addresses for logged-in customers
+    saved_addresses = []
+    if request.user.is_authenticated and request.user.is_customer_role:
+        saved_addresses = request.user.addresses.all()
 
     return render(request, "orders/checkout.html", {
         "store": store, "form": form, "cart_lines": cart_lines,
         "subtotal": subtotal, "tax_total": tax_total, "estimated_total": estimated_total,
+        "saved_addresses": saved_addresses,
     })
 
 
@@ -144,7 +171,8 @@ def remove_from_cart(request, slug):
 
 @require_http_methods(["POST"])
 def add_to_cart(request, slug):
-    """Session-based cart -- no DB write until checkout is confirmed."""
+    """Session-based cart -- no DB write until checkout is confirmed.
+    Returns JSON for AJAX requests, falls back to redirect for non-JS."""
     store = get_object_or_404(Store, slug=slug, is_active=True)
     item = get_object_or_404(FoodItem, pk=request.POST.get("food_item_id"), store=store)
     quantity = max(1, min(99, int(request.POST.get("quantity", 1))))
@@ -158,8 +186,21 @@ def add_to_cart(request, slug):
     cart[str(item.pk)] = cart.get(str(item.pk), 0) + quantity
     request.session[cart_key] = cart
     request.session.modified = True
+
+    # Return JSON for AJAX, redirect for non-JS fallback
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.content_type == "application/json":
+        return JsonResponse({
+            "success": True,
+            "item_name": item.name,
+            "cart_count": sum(cart.values()),
+        })
+
+    # Only show Django message for non-AJAX (traditional form submit)
     messages.success(request, f"Added {item.name} to your cart.")
     return redirect("stores:store_detail", slug=slug)
+
+
+
 
 
 def order_confirmation(request, order_number):
@@ -240,6 +281,7 @@ def order_list(request):
     if not store:
         return redirect("stores:create_store")
 
+    # Existing filters
     status_filter = request.GET.get("status", "")
     date_from = request.GET.get("date_from", "")
     date_to = request.GET.get("date_to", "")
@@ -247,38 +289,47 @@ def order_list(request):
     max_total = request.GET.get("max_total", "")
     sort = request.GET.get("sort", "-created_at")
 
+    # New filters
+    order_number_filter = request.GET.get("order_number", "").strip()
+    customer_name_filter = request.GET.get("customer_name", "").strip()
+    customer_phone_filter = request.GET.get("customer_phone", "").strip()
+
     orders = store.orders.filter(merged_into__isnull=True).select_related("customer").prefetch_related("items")
 
+    # Apply new filters
+    if order_number_filter:
+        orders = orders.filter(order_number__icontains=order_number_filter)
+    if customer_name_filter:
+        orders = orders.filter(customer_name__icontains=customer_name_filter)
+    if customer_phone_filter:
+        orders = orders.filter(contact_phone__icontains=customer_phone_filter)
+
+    # Apply existing filters
     if status_filter:
         orders = orders.filter(status=status_filter)
-
     if date_from:
         parsed_from = parse_date(date_from)
         if parsed_from:
             orders = orders.filter(created_at__date__gte=parsed_from)
         else:
             messages.error(request, "'From' date was not understood and was ignored.")
-
     if date_to:
         parsed_to = parse_date(date_to)
         if parsed_to:
             orders = orders.filter(created_at__date__lte=parsed_to)
         else:
             messages.error(request, "'To' date was not understood and was ignored.")
-
     if min_total:
         try:
             orders = orders.filter(grand_total__gte=Decimal(min_total))
         except (InvalidOperation, ValueError):
             messages.error(request, "Minimum total was not a valid number and was ignored.")
-
     if max_total:
         try:
             orders = orders.filter(grand_total__lte=Decimal(max_total))
         except (InvalidOperation, ValueError):
             messages.error(request, "Maximum total was not a valid number and was ignored.")
 
-    # Whitelist sort options to prevent arbitrary field ordering via query params.
     allowed_sorts = {
         "-created_at": "Newest first", "created_at": "Oldest first",
         "-grand_total": "Total: high to low", "grand_total": "Total: low to high",
@@ -288,10 +339,16 @@ def order_list(request):
     orders = orders.order_by(sort)
 
     return render(request, "orders/order_list.html", {
-        "store": store, "orders": orders, "status_choices": Order.Status.choices, "status_filter": status_filter,
-        "date_from": date_from, "date_to": date_to, "min_total": min_total, "max_total": max_total,
+        "store": store, "orders": orders, "status_choices": Order.Status.choices,
+        "status_filter": status_filter,
+        "date_from": date_from, "date_to": date_to,
+        "min_total": min_total, "max_total": max_total,
         "sort": sort, "sort_choices": allowed_sorts,
+        "order_number_filter": order_number_filter,
+        "customer_name_filter": customer_name_filter,
+        "customer_phone_filter": customer_phone_filter,
     })
+
 
 
 @login_required
@@ -299,7 +356,22 @@ def order_detail(request, order_number):
     order = get_object_or_404(Order, order_number=order_number)
     _require_owner_of(request, order.store)
     child_orders = order.merged_orders.all() if order.is_master else []
-    return render(request, "orders/order_detail.html", {"order": order, "child_orders": child_orders})
+    available_items = order.store.food_items.filter(is_available=True).select_related("category").values(
+        "pk", "name", "price", "category__name", "category__pk"
+    )
+    import json
+    items_json = json.dumps([
+        {"pk": i["pk"], "name": i["name"], "price": str(i["price"]),
+         "category_pk": i["category__pk"] or 0,
+         "category_name": i["category__name"] or "Uncategorized"}
+        for i in available_items
+    ])
+    return render(request, "orders/order_detail.html", {
+        "order": order,
+        "child_orders": child_orders,
+        "available_items": available_items,
+        "items_json": items_json,
+    })
 
 
 @login_required
@@ -315,6 +387,15 @@ def order_update_status(request, order_number):
         return redirect("orders:order_detail", order_number=order_number)
 
     order.status = new_status
+    # Notify the customer if they have an account
+    if order.customer:
+        Notification.objects.create(
+            user=order.customer,
+            notification_type=Notification.Type.STATUS_CHANGED,
+            title=f"Order {order.order_number} updated",
+            message=f"Your order status is now: {order.get_status_display()}",
+            order=order,
+        )
     order.save(update_fields=["status", "updated_at"])
     logger.info("Order %s status -> %s by %s", order.order_number, new_status, request.user.username)
     messages.success(request, f"Order marked as {valid_statuses[new_status]}.")
@@ -352,3 +433,185 @@ def order_merge(request):
         form = OrderMergeForm(store=store)
 
     return render(request, "orders/order_merge.html", {"store": store, "form": form})
+
+
+# ---------------------------------------------------------------------------
+# Owner manual order creation + editing
+# ---------------------------------------------------------------------------
+
+@login_required
+def order_create_manual(request):
+    """Owner creates an order manually — adds items and customer info."""
+    store = request.user.stores.first()
+    if not store:
+        return redirect("stores:create_store")
+
+    # Pass items with category info for the dependent dropdown
+    food_items = store.food_items.filter(is_available=True).select_related("category").values(
+        "pk", "name", "price", "category__name", "category__pk"
+    )
+
+    if request.method == "POST":
+        order_form = ManualOrderForm(request.POST)
+
+        item_pks = request.POST.getlist("food_item_pk[]")
+        quantities = request.POST.getlist("quantity[]")
+
+        cart_rows = []
+        for pk, qty in zip(item_pks, quantities):
+            try:
+                item = store.food_items.get(pk=int(pk))
+                cart_rows.append({"food_item": item, "quantity": max(1, int(qty))})
+            except (ValueError, Exception):
+                messages.error(request, "Invalid item selected.")
+                return redirect("orders:order_create_manual")
+
+        if not cart_rows:
+            messages.error(request, "Please add at least one item to the order.")
+            return redirect("orders:order_create_manual")
+
+        if order_form.is_valid():
+            try:
+                order = create_order_with_items(
+                    store=store,
+                    cart_rows=cart_rows,
+                    customer=None,
+                    contact_fields={
+                        "customer_name": order_form.cleaned_data.get("customer_name", ""),
+                        "customer_address": order_form.cleaned_data.get("customer_address", ""),
+                        "table_number": order_form.cleaned_data.get("table_number", ""),
+                        "contact_phone": order_form.cleaned_data.get("contact_phone", ""),
+                        "contact_email": order_form.cleaned_data.get("contact_email", ""),
+                        "remarks": order_form.cleaned_data.get("remarks", ""),
+},
+                )
+            except OrderMergeError as exc:
+                messages.error(request, str(exc))
+                return redirect("orders:order_create_manual")
+
+            order.status = order_form.cleaned_data.get("status", Order.Status.PENDING)
+            order.save(update_fields=["status", "updated_at"])
+
+            logger.info("Manual order created: %s by %s", order.order_number, request.user.username)
+            messages.success(request, f"Order {order.order_number} created successfully.")
+            return redirect("orders:order_detail", order_number=order.order_number)
+    else:
+        order_form = ManualOrderForm()
+
+    # Build a JSON-serializable structure for the JavaScript
+    import json
+    items_json = json.dumps([
+        {"pk": item["pk"], "name": item["name"], "price": str(item["price"]),
+         "category_pk": item["category__pk"] or 0,
+         "category_name": item["category__name"] or "Uncategorized"}
+        for item in food_items
+    ])
+
+    return render(request, "orders/order_create_manual.html", {
+        "store": store,
+        "form": order_form,
+        "items_json": items_json,
+    })
+
+
+
+@login_required
+def order_edit(request, order_number):
+    """Owner edits order customer info and status."""
+    order = get_object_or_404(Order, order_number=order_number)
+    _require_owner_of(request, order.store)
+
+    if request.method == "POST":
+        form = OrderEditForm(request.POST)
+        if form.is_valid():
+            order.customer_name = form.cleaned_data.get("customer_name", "")
+            order.customer_address = form.cleaned_data.get("customer_address", "")
+            order.table_number = form.cleaned_data.get("table_number", "")
+            order.contact_phone = form.cleaned_data.get("contact_phone", "")
+            order.contact_email = form.cleaned_data.get("contact_email", "")
+            order.remarks = form.cleaned_data.get("remarks", "")
+            order.status = form.cleaned_data.get("status", order.status)
+            order.save()
+            messages.success(request, "Order updated.")
+            return redirect("orders:order_detail", order_number=order.order_number)
+    else:
+        form = OrderEditForm(initial={
+            "customer_name": order.customer_name,
+            "customer_address": order.customer_address,
+            "table_number": order.table_number,
+            "contact_phone": order.contact_phone,
+            "contact_email": order.contact_email,
+            "remarks": order.remarks,
+            "status": order.status,
+        })
+
+    return render(request, "orders/order_edit.html", {
+        "order": order,
+        "form": form,
+    })
+
+
+
+@login_required
+@require_http_methods(["POST"])
+def order_item_add(request, order_number):
+    """Owner adds an item to an existing order."""
+    order = get_object_or_404(Order, order_number=order_number)
+    _require_owner_of(request, order.store)
+
+    food_item_id = request.POST.get("food_item_id")
+    quantity = max(1, min(99, int(request.POST.get("quantity", 1))))
+
+    item = get_object_or_404(request.user.stores.first().food_items, pk=food_item_id)
+
+    # Check if this item already exists in the order — if so, increase quantity
+    existing = order.items.filter(food_item=item).first()
+    if existing:
+        existing.quantity += quantity
+        existing.save(update_fields=["quantity"])
+    else:
+        OrderItem.objects.create(
+            order=order,
+            food_item=item,
+            item_name_snapshot=item.name,
+            unit_price_snapshot=item.price,
+            tax_percentage_snapshot=getattr(item, "tax_percentage", 0) or 0,
+            quantity=quantity,
+        )
+
+    order.recalculate_totals()
+    messages.success(request, f"Added {quantity} x {item.name} to order.")
+    return redirect("orders:order_detail", order_number=order.order_number)
+
+
+@login_required
+@require_http_methods(["POST"])
+def order_item_edit(request, order_number, item_pk):
+    """Owner edits quantity of an order item."""
+    order = get_object_or_404(Order, order_number=order_number)
+    _require_owner_of(request, order.store)
+
+    order_item = get_object_or_404(OrderItem, pk=item_pk, order=order)
+    quantity = max(1, min(99, int(request.POST.get("quantity", order_item.quantity))))
+
+    order_item.quantity = quantity
+    order_item.save(update_fields=["quantity"])
+    order.recalculate_totals()
+
+    messages.success(request, "Item quantity updated.")
+    return redirect("orders:order_detail", order_number=order.order_number)
+
+
+@login_required
+@require_http_methods(["POST"])
+def order_item_delete(request, order_number, item_pk):
+    """Owner removes an item from an order."""
+    order = get_object_or_404(Order, order_number=order_number)
+    _require_owner_of(request, order.store)
+
+    order_item = get_object_or_404(OrderItem, pk=item_pk, order=order)
+    order_item.delete()
+    order.recalculate_totals()
+
+    messages.success(request, "Item removed from order.")
+    return redirect("orders:order_detail", order_number=order.order_number)

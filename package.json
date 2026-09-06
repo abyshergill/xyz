@@ -1,0 +1,16 @@
+{
+  "name": "taliawale.com",
+  "version": "1.0.0",
+  "description": "A Django-based web application for managing multiple independent food stalls/stores on one platform: customer ordering, QR-code menu access, order management & merging, billing/tax configuration, and a sales/CRM analytics dashboard for store owners.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  }
+}

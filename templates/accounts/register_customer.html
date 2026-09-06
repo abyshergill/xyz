@@ -1,18 +1,203 @@
 {% extends "base.html" %}
 {% block title %}Customer Sign Up{% endblock %}
 {% block content %}
-<div class="max-w-lg mx-auto card">
-  <h1 class="text-xl font-bold mb-4">Create Your Customer Account</h1>
-  <form method="post" novalidate>
-    {% csrf_token %}
-    {% for field in form %}
-      <div class="mb-3">
-        <label class="block text-sm font-medium mb-1">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
-        {{ field }}
-        {% for error in field.errors %}<p class="text-red-600 text-xs">{{ error }}</p>{% endfor %}
+<div class="max-w-md mx-auto">
+
+  <!-- Header -->
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-2xl">
+      👤
+    </div>
+    <div>
+      <h1 class="text-xl font-bold">Create Your Account</h1>
+      <p class="text-sm text-gray-500">Join to save addresses and track orders</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+      <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+        {% for error in form.non_field_errors %}
+        <p class="text-sm text-red-600 flex items-start gap-2">
+          <span class="mt-0.5">⚠</span> {{ error }}
+        </p>
+        {% endfor %}
       </div>
-    {% endfor %}
-    <button type="submit" class="btn w-full">Create Account</button>
-  </form>
+      {% endif %}
+
+      <!-- Full Name -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-1.5">
+          {{ form.full_name.label }} <span class="text-red-500">*</span>
+        </label>
+        {{ form.full_name }}
+        {% if form.full_name.errors %}
+        <div class="mt-2 p-2.5 bg-red-50 border border-red-200 rounded-lg space-y-1">
+          {% for error in form.full_name.errors %}
+          <p class="text-xs text-red-600 flex items-start gap-1.5">
+            <span class="mt-0.5 flex-shrink-0">⚠</span><span>{{ error }}</span>
+          </p>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Email -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-1.5">
+          {{ form.email.label }} <span class="text-red-500">*</span>
+        </label>
+        {{ form.email }}
+        {% if form.email.errors %}
+        <div class="mt-2 p-2.5 bg-red-50 border border-red-200 rounded-lg space-y-1">
+          {% for error in form.email.errors %}
+          <p class="text-xs text-red-600 flex items-start gap-1.5">
+            <span class="mt-0.5 flex-shrink-0">⚠</span><span>{{ error }}</span>
+          </p>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Phone Number -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-1.5">
+          {{ form.mobile_number.label }} <span class="text-red-500">*</span>
+        </label>
+        {{ form.mobile_number }}
+        {% if form.mobile_number.errors %}
+        <div class="mt-2 p-2.5 bg-red-50 border border-red-200 rounded-lg space-y-1">
+          {% for error in form.mobile_number.errors %}
+          <p class="text-xs text-red-600 flex items-start gap-1.5">
+            <span class="mt-0.5 flex-shrink-0">⚠</span><span>{{ error }}</span>
+          </p>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Password -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-1.5">
+          {{ form.password1.label }} <span class="text-red-500">*</span>
+        </label>
+        {{ form.password1 }}
+        {% if form.password1.errors %}
+        <div class="mt-2 p-2.5 bg-red-50 border border-red-200 rounded-lg space-y-1">
+          {% for error in form.password1.errors %}
+          <p class="text-xs text-red-600 flex items-start gap-1.5">
+            <span class="mt-0.5 flex-shrink-0">⚠</span><span>{{ error }}</span>
+          </p>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Password Confirmation -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-1.5">
+          {{ form.password2.label }} <span class="text-red-500">*</span>
+        </label>
+        {{ form.password2 }}
+        {% if form.password2.help_text %}
+        <p class="text-xs text-gray-400 mt-1">{{ form.password2.help_text }}</p>
+        {% endif %}
+        {% if form.password2.errors %}
+        <div class="mt-2 p-2.5 bg-red-50 border border-red-200 rounded-lg space-y-1">
+          {% for error in form.password2.errors %}
+          <p class="text-xs text-red-600 flex items-start gap-1.5">
+            <span class="mt-0.5 flex-shrink-0">⚠</span><span>{{ error }}</span>
+          </p>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Password Requirements (after both password fields) -->
+      <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <p class="text-xs font-semibold text-blue-700 mb-2 flex items-center gap-1">
+          🔒 Password Requirements
+        </p>
+        <ul class="text-xs text-blue-600 space-y-1">
+          <li class="flex items-start gap-1.5">
+            <span class="text-blue-400 mt-0.5">•</span>
+            At least 9 characters long
+          </li>
+          <li class="flex items-start gap-1.5">
+            <span class="text-blue-400 mt-0.5">•</span>
+            Not too similar to your name or email
+          </li>
+          <li class="flex items-start gap-1.5">
+            <span class="text-blue-400 mt-0.5">•</span>
+            Not a commonly used password (e.g. "password123")
+          </li>
+          <li class="flex items-start gap-1.5">
+            <span class="text-blue-400 mt-0.5">•</span>
+            Not entirely numeric
+          </li>
+        </ul>
+      </div>
+
+      <button type="submit" class="btn w-full text-base mt-2">
+        Create Account
+      </button>
+    </form>
+
+    <!-- Google Sign Up -->
+    <div class="my-5 flex items-center gap-3">
+      <div class="flex-1 border-t border-gray-200"></div>
+      <span class="text-xs font-medium text-gray-400 uppercase">or</span>
+      <div class="flex-1 border-t border-gray-200"></div>
+    </div>
+
+    <form method="post" action="{% url 'accounts:login_customer' %}">
+      {% csrf_token %}
+
+      <button
+        type="submit"
+        class="w-full flex items-center justify-center gap-3 border border-gray-300 bg-white text-gray-700 font-medium py-2.5 px-4 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition duration-150"
+      >
+        <!-- Google Logo -->
+        <svg
+          class="w-5 h-5 flex-shrink-0"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            fill="#4285F4"
+            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31-1.17.78-2.66 1.24-4.42 1.24-3.4 0-6.29-2.3-7.32-5.4H2.18v3.27C3.99 20.53 7.7 23 12 23c2.97 0 5.46-.98 7.28-2.66 1.82-1.68 3.28-4.74 3.28-8.09z"
+          />
+          <path
+            fill="#34A853"
+            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-3.4 0-6.29-2.3-7.32-5.4H2.18v3.27C3.99 20.53 7.7 23 12 23z"
+          />
+          <path
+            fill="#FBBC05"
+            d="M4.68 14.17c-.23-.65-.36-1.34-.36-2.17s.13-1.52.36-2.17V6.56H2.18C1.43 8.04 1 9.71 1 11.5s.43 3.46 1.18 4.94l2.5-2.27z"
+          />
+          <path
+            fill="#EA4335"
+            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"
+          />
+        </svg>
+
+        <span>Continue with Google</span>
+      </button>
+    </form>
+
+    <div class="mt-5 pt-4 border-t text-center">
+      <p class="text-sm text-gray-500">Already have an account?</p>
+
+      <a
+        href="{% url 'accounts:login' %}"
+        class="inline-flex items-center gap-1 text-sm font-medium text-orange-600 hover:text-orange-700 hover:underline mt-1"
+      >
+        Log in →
+      </a>
+    </div>
+  </div>
 </div>
 {% endblock %}

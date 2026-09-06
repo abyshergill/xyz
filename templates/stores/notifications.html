@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Notifications{% endblock %}
+{% block content %}
+
+<div class="flex justify-between items-center mb-4">
+  <h1 class="text-xl font-bold">Notifications</h1>
+  {% if unread_count %}
+    <form method="post" action="{% url 'stores:mark_all_notifications_read' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-secondary text-sm">Mark all as read</button>
+    </form>
+  {% endif %}
+</div>
+
+<div class="space-y-2">
+  {% for notif in notifications %}
+  <div class="card flex items-start gap-3 {% if not notif.is_read %}bg-orange-50 border-orange-200{% endif %}">
+    <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-xl
+                {% if notif.notification_type == 'NEW_ORDER' %}bg-green-100{% elif notif.notification_type == 'STATUS_CHANGED' %}bg-blue-100{% else %}bg-yellow-100{% endif %}">
+      {% if notif.notification_type == 'NEW_ORDER' %}🔔{% elif notif.notification_type == 'STATUS_CHANGED' %}📦{% else %}⚠️{% endif %}
+    </div>
+    <div class="flex-1">
+      <p class="font-medium text-sm">{{ notif.title }}</p>
+      <p class="text-sm text-gray-500">{{ notif.message }}</p>
+      <p class="text-xs text-gray-400 mt-1">{{ notif.created_at|date:"M d, Y, H:i" }}</p>
+    </div>
+    {% if not notif.is_read %}
+    <form method="post" action="{% url 'stores:mark_notification_read' notif.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="text-xs text-orange-600 hover:underline">Mark read</button>
+    </form>
+    {% endif %}
+  </div>
+  {% empty %}
+  <p class="text-gray-500 text-center py-8">No notifications yet.</p>
+  {% endfor %}
+</div>
+
+{% endblock %}

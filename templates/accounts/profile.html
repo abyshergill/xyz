@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}My Profile{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+
+  <!-- ===== HEADER ===== -->
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-2xl">
+      👤
+    </div>
+    <div>
+      <h1 class="text-xl font-bold">My Profile</h1>
+      <p class="text-sm text-gray-500">Manage your account and addresses</p>
+    </div>
+  </div>
+
+  <!-- ===== PERSONAL INFO ===== -->
+  <div class="card mb-4">
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Personal Information</h2>
+    <form method="post" action="{% url 'accounts:profile' %}">
+      {% csrf_token %}
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {% for field in profile_form %}
+        <div class="{% if field.field.widget.input_type == 'email' or field.field.widget.input_type == 'text' %}sm:col-span-1{% else %}sm:col-span-2{% endif %}">
+          <label class="block text-sm font-medium mb-1">{{ field.label }}</label>
+          {{ field }}
+          {% for error in field.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      <button type="submit" class="btn w-full sm:w-auto mt-3">Save Changes</button>
+    </form>
+  </div>
+
+  <!-- ===== USERNAME + PASSWORD (side by side on desktop) ===== -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+    <div class="card">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Username</h2>
+      <p class="text-sm text-gray-700 font-medium mb-1">{{ user.username }}</p>
+      <p class="text-xs text-gray-400 mb-3">Login with username OR email</p>
+      <a href="{% url 'accounts:change_username' %}"
+         class="inline-flex items-center gap-1 text-xs font-medium text-white bg-blue-600 px-3 py-2 rounded-lg hover:bg-blue-700 transition w-full justify-center sm:w-auto">
+        Change Username
+      </a>
+    </div>
+    <div class="card">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Password</h2>
+      <p class="text-sm text-gray-700 font-medium mb-1">••••••••</p>
+      <p class="text-xs text-gray-400 mb-3">Change your password regularly</p>
+      <a href="{% url 'accounts:change_password' %}"
+         class="inline-flex items-center gap-1 text-xs font-medium text-white bg-blue-600 px-3 py-2 rounded-lg hover:bg-blue-700 transition w-full justify-center sm:w-auto">
+        Change Password
+      </a>
+    </div>
+  </div>
+
+  <!-- ===== SAVED ADDRESSES ===== -->
+  <div class="card mb-4">
+    <div class="flex justify-between items-center mb-3">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Saved Addresses</h2>
+      <button type="button" onclick="toggleAddressForm()"
+              class="inline-flex items-center gap-1 text-xs font-medium text-white bg-orange-600 px-3 py-2 rounded-lg hover:bg-orange-700 transition">
+        + Add New
+      </button>
+    </div>
+
+    <!-- Add new address form (hidden by default) -->
+    <div id="address-form-wrapper" class="mb-4 {% if not address_form.errors %}hidden{% endif %}">
+      <form method="post" action="{% url 'accounts:add_address' %}" class="border rounded-lg p-4 bg-gray-50">
+        <h3 class="text-sm font-semibold mb-3">Add New Address</h3>
+        {% csrf_token %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {% for field in address_form %}
+          <div class="{% if field.field.widget.input_type == 'text' and 'address' in field.name %}sm:col-span-2{% endif %}">
+            <label class="block text-xs font-medium mb-1">{{ field.label }}</label>
+            {{ field }}
+            {% for error in field.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+        <div class="flex gap-2 mt-3">
+          <button type="submit" class="btn text-sm">Add Address</button>
+          <button type="button" onclick="toggleAddressForm()" class="btn btn-secondary text-sm">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Existing addresses -->
+    <div class="space-y-3">
+      {% for addr in addresses %}
+      <div class="border rounded-lg p-3 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+        <div class="flex-1">
+          <div class="flex flex-wrap gap-1.5 mb-2">
+            <span class="inline-block bg-blue-100 text-blue-700 text-xs font-medium rounded-full px-2.5 py-1">{{ addr.get_alias_display }}</span>
+            {% if addr.is_default %}<span class="inline-block bg-green-100 text-green-700 text-xs font-medium rounded-full px-2.5 py-1">★ Default</span>{% endif %}
+          </div>
+          <p class="text-sm font-medium">{{ addr.address }}</p>
+          <div class="text-xs text-gray-400 mt-1 space-y-0.5">
+            {% if addr.pincode %}<p>Pincode: {{ addr.pincode }}</p>{% endif %}
+            {% if addr.phone_number %}<p>Phone: {{ addr.phone_number }}</p>{% endif %}
+          </div>
+        </div>
+        <div class="flex gap-2 sm:flex-col sm:items-end">
+          <a href="{% url 'accounts:edit_address' addr.pk %}"
+             class="inline-flex items-center gap-1 text-xs font-medium text-white bg-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-700 transition whitespace-nowrap">
+            Edit
+          </a>
+          <form method="post" action="{% url 'accounts:delete_address' addr.pk %}" onsubmit="return confirm('Delete this address?');">
+            {% csrf_token %}
+            <button type="submit"
+                    class="inline-flex items-center gap-1 text-xs font-medium text-white bg-red-600 px-3 py-1.5 rounded-lg hover:bg-red-700 transition whitespace-nowrap">
+              Delete
+            </button>
+          </form>
+        </div>
+      </div>
+      {% empty %}
+      <div class="text-center py-6">
+        <p class="text-gray-400 text-sm mb-2">No saved addresses yet.</p>
+        <button type="button" onclick="toggleAddressForm()"
+                class="text-orange-600 hover:underline text-sm font-medium">+ Add your first address</button>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- ===== VIEW ORDERS ===== -->
+  <div class="text-center">
+    <a href="{% url 'orders:my_orders' %}"
+       class="inline-flex items-center gap-2 text-sm font-medium text-white bg-orange-600 px-6 py-3 rounded-lg hover:bg-orange-700 transition">
+      📦 View My Orders
+    </a>
+  </div>
+
+</div>
+
+<script>
+function toggleAddressForm() {
+    var wrapper = document.getElementById('address-form-wrapper');
+    wrapper.classList.toggle('hidden');
+    if (!wrapper.classList.contains('hidden')) {
+        wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+</script>
+
+{% endblock %}

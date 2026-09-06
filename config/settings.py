@@ -26,7 +26,7 @@ SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-CHANGE-ME-IN-PROD
 
 DEBUG = env.bool("DEBUG", default=True)
 
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["calcomp.ai", "www.calcomp.ai", "143.198.161.140", "localhost", "127.0.0.1"])
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["143.198.161.140", "localhost", "127.0.0.1"])
 
 # ---------------------------------------------------------------------------
 # Applications
@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.humanize",
+    "django.contrib.sites",   # required by allauth
 
     # Local apps
     "accounts",
@@ -46,7 +47,88 @@ INSTALLED_APPS = [
     "orders",
     "analytics",
     "platform_admin",
+
+    # Third-party apps
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
 ]
+
+
+SITE_ID = 1  # required by allauth
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+
+# Provider Configuration
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': env("GOOGLE_OAUTH_CLIENT_ID", default=""),
+            'secret': env("GOOGLE_OAUTH_CLIENT_SECRET", default=""),
+            'key': ''
+        }, 
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+	   'prompt': 'select_account',
+        }
+    }
+}
+
+SOCIALACCOUNT_ADAPTER = 'accounts.adapters.CustomSocialAccountAdapter'
+SOCIALACCOUNT_LOGIN_ON_GET = True  # Automatically log in users after successful OAuth login
+
+# Force allauth to automatically create user accounts from Google profile data
+SOCIALACCOUNT_AUTO_SIGNUP = True
+
+# Disable email verification requirements for social signups
+SOCIALACCOUNT_EMAIL_VERIFICATION = "none"
+ACCOUNT_EMAIL_VERIFICATION = "none"
+
+# Use email as the main account identifier
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+
+
+# Connect Google logins automatically if the email matches an existing user account
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = False
+
+
+# # Redirect settings after login/logout
+# LOGIN_REDIRECT_URL = '/'
+# LOGOUT_REDIRECT_URL = '/'
+
+# ---------------------------------------------------------------------------
+# Google OAuth (commented out — enable when ready)
+# ---------------------------------------------------------------------------
+# Requires: pip install social-auth-app-django
+# Then uncomment the "social_django" app in INSTALLED_APPS above,
+# add 'social_core.backends.google.GoogleOAuth2' to AUTHENTICATION_BACKENDS,
+# and add these to your .env:
+#
+# SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = env("GOOGLE_OAUTH2_CLIENT_ID", default="")
+# SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = env("GOOGLE_OAUTH2_CLIENT_SECRET", default="")
+# SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ["openid", "email", "profile"]
+# SOCIAL_AUTH_URL_NAMESPACE = "social"
+# SOCIAL_AUTH_LOGIN_REDIRECT_URL = "/accounts/dashboard/"
+# SOCIAL_AUTH_LOGIN_URL = "/accounts/login/"
+#
+# AUTHENTICATION_BACKENDS = [
+#     "social_core.backends.google.GoogleOAuth2",
+#     "django.contrib.auth.backends.ModelBackend",
+# ]
+#
+# And in accounts/urls.py, add:
+# path("google/", include("social_django.urls", namespace="social")),
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -57,6 +139,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "accounts.middleware.RoleBasedAccessMiddleware",       # custom RBAC guard, see accounts/middleware.py
+    "allauth.account.middleware.AccountMiddleware",        # allauth middleware for social auth
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -73,6 +156,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "stores.context_processors.owner_store",
+                "accounts.context_processors.notifications", 
             ],
         },
     },
@@ -116,9 +200,12 @@ else:
 # ---------------------------------------------------------------------------
 AUTH_USER_MODEL = "accounts.User"
 
-AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
-]
+# NOTE: AUTHENTICATION_BACKENDS is already defined above (near
+# SOCIALACCOUNT_PROVIDERS) with both ModelBackend and allauth's backend.
+# It used to be redefined here with only ModelBackend, which silently
+# overwrote the first list and broke Google login (allauth's backend
+# was no longer active, so the user could complete the Google OAuth
+# handshake but Django would never actually log them in).
 
 LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "accounts:dashboard_redirect"
@@ -159,6 +246,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
 
 # Image upload hard limits (defence-in-depth against DoS / storage abuse).
 # Enforced again in stores/utils.py via Pillow validation.
@@ -203,6 +291,7 @@ if not DEBUG:
     # Caddy sets X-Forwarded-Proto, so Django must trust that header to know
     # the original request was HTTPS.
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    USE_X_FORWARDED_HOST = True
 else:
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
@@ -258,12 +347,13 @@ DEFAULT_FROM_EMAIL = env("DJANGO_DEFAULT_FROM_EMAIL", default="no-reply@yourtrol
 # Cache (used for login brute-force lockout tracking -- see accounts/throttling.py)
 # ---------------------------------------------------------------------------
 # --- ACTIVE: in-memory cache (fine for local dev / a single-process deploy) ---
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-    }
-}
-
+#CACHES = {
+#    "default": {
+#        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+#        "LOCATION": "redis://redis:6379/1",
+#    }
+#}
+#===============================================================================
 # --- PRODUCTION: swap to Redis (or Memcached) once running multiple Gunicorn
 #     workers, so the brute-force lockout counters are shared across all of
 #     them instead of being tracked separately per-process. Requires
@@ -276,6 +366,21 @@ CACHES = {
 #         "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
 #     }
 # }
+
+if env.bool("DJANGO_USE_POSTGRES", default=False):
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": env("DJANGO_REDIS_URL", default="redis://redis:6379/1"),
+            "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        }
+    }
 
 # ---------------------------------------------------------------------------
 # Site base URL (used to build absolute QR-code target links)

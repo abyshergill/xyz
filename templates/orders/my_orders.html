@@ -2,24 +2,73 @@
 {% load currency_tags %}
 {% block title %}My Orders{% endblock %}
 {% block content %}
-<h1 class="text-xl font-bold mb-4">My Orders</h1>
-<div class="card overflow-x-auto">
-<table class="w-full text-sm">
-  <thead><tr class="text-left border-b"><th class="py-2">Order #</th><th>Store</th><th>Status</th><th>Total</th><th>Placed</th><th></th></tr></thead>
-  <tbody>
-  {% for order in orders %}
-    <tr class="border-b">
-      <td class="py-2">{{ order.order_number }}</td>
-      <td>{{ order.store.name }}</td>
-      <td>{{ order.get_status_display }}</td>
-      <td>{% currency order.store order.grand_total %}</td>
-      <td>{{ order.created_at|date:"M d, H:i" }}</td>
-      <td><a href="{% url 'orders:order_bill' order.order_number %}" class="text-orange-600 underline">Bill</a></td>
-    </tr>
-  {% empty %}
-    <tr><td colspan="6" class="py-2 text-gray-500">You haven't placed any orders yet.</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
+
+<div class="flex items-center gap-3 mb-6">
+  <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-2xl">📦</div>
+  <div>
+    <h1 class="text-xl font-bold">My Orders</h1>
+    <p class="text-sm text-gray-500">Track and manage your past orders</p>
+  </div>
 </div>
+
+{% if orders %}
+<div class="space-y-4">
+  {% for order in orders %}
+  <div class="card">
+    <!-- Header row -->
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-3">
+      <div>
+        <a href="{% url 'orders:order_confirmation' order.order_number %}" class="text-orange-600 font-semibold hover:underline text-sm">
+          {{ order.order_number }}
+        </a>
+        <p class="text-sm font-medium text-gray-700 mt-0.5">{{ order.store.name }}</p>
+        <p class="text-xs text-gray-400">{{ order.created_at|date:"M d, Y · H:i" }}</p>
+      </div>
+      <div class="flex flex-row sm:flex-col sm:items-end gap-2 sm:gap-1">
+        <span class="inline-block text-xs font-semibold rounded-full px-3 py-1 whitespace-nowrap
+          {% if order.status == 'COMPLETED' %}bg-green-100 text-green-700
+          {% elif order.status == 'CANCELLED' %}bg-red-100 text-red-700
+          {% elif order.status == 'PENDING' %}bg-yellow-100 text-yellow-700
+          {% else %}bg-blue-100 text-blue-700{% endif %}">
+          {{ order.get_status_display }}
+        </span>
+        <p class="font-bold text-base sm:text-lg">{% currency order.store order.grand_total %}</p>
+      </div>
+    </div>
+
+    <!-- Items summary -->
+    <div class="border-t pt-3">
+      <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Items</p>
+      <ul class="text-sm text-gray-600 space-y-1">
+        {% for item in order.items.all %}
+        <li class="flex justify-between">
+          <span>{{ item.quantity }} &times; {{ item.item_name_snapshot }}</span>
+          <span class="text-gray-400">{% currency order.store item.line_total_with_tax %}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex flex-col sm:flex-row gap-2 mt-4 pt-3 border-t">
+      <a href="{% url 'orders:order_confirmation' order.order_number %}"
+         class="inline-flex items-center justify-center gap-1 text-xs font-medium text-white bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700 transition flex-1 sm:flex-none">
+        View Details
+      </a>
+      <a href="{% url 'orders:order_bill' order.order_number %}"
+         class="inline-flex items-center justify-center gap-1 text-xs font-medium text-white bg-orange-600 px-4 py-2 rounded-lg hover:bg-orange-700 transition flex-1 sm:flex-none">
+        Download Bill
+      </a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card text-center py-12">
+  <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">🛒</div>
+  <p class="text-gray-500 mb-4">You haven't placed any orders yet.</p>
+  <a href="{% url 'stores:store_list' %}" class="btn inline-block">Browse Stores</a>
+</div>
+{% endif %}
+
 {% endblock %}

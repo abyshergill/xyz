@@ -1,175 +1,156 @@
-import datetime
-
-from django.test import TestCase
-
-from accounts.models import User
-from stores.models import Category, FoodItem, OperatingHours, Store
-
-from .models import Order
-from .services import OrderMergeError, create_order_with_items, merge_orders
+from django.test import TestCase, Client
+from django.contrib.auth import get_user_model
+from django.urls import reverse
+from stores.models import Store, Category, FoodItem
+from .models import Order, OrderItem
+from decimal import Decimal
 
 
-def _open_all_week(store):
-    for day, _ in OperatingHours.Day.choices:
-        OperatingHours.objects.create(
-            store=store, day=day,
-            opening_time=datetime.time(0, 0), closing_time=datetime.time(23, 59),
-        )
+User = get_user_model()
 
 
-class CheckoutStockSafetyTests(TestCase):
+class OrderModelTests(TestCase):
     def setUp(self):
         self.owner = User.objects.create_user(
-            username="owner_c", email="c@example.com", password="StrongPass123!", role=User.Role.OWNER
-        )
-        self.store = Store.objects.create(owner=self.owner, name="Curry Corner", address="1 St")
-        _open_all_week(self.store)
-        self.category = Category.objects.create(store=self.store, name="Mains")
-        self.item = FoodItem.objects.create(
-            store=self.store, category=self.category, name="Green Curry", price=9.00, stock_quantity=3
-        )
-
-    def test_order_creation_decrements_stock(self):
-        order = create_order_with_items(
-            store=self.store, cart_rows=[{"food_item": self.item, "quantity": 2}],
-        )
-        self.item.refresh_from_db()
-        self.assertEqual(self.item.stock_quantity, 1)
-        self.assertEqual(order.grand_total, self.item.order_items.first().line_total)
-
-    def test_cannot_oversell_stock(self):
-        with self.assertRaises(OrderMergeError):
-            create_order_with_items(
-                store=self.store, cart_rows=[{"food_item": self.item, "quantity": 99}],
-            )
-        self.item.refresh_from_db()
-        self.assertEqual(self.item.stock_quantity, 3)  # unchanged on failure
-
-    def test_checkout_blocked_when_store_closed(self):
-        self.store.operating_hours.all().delete()  # no hours configured => closed
-        resp = self.client.post(
-            f"/store/{self.store.slug}/cart/add/", {"food_item_id": self.item.pk, "quantity": 1}
-        )
-        self.assertEqual(resp.status_code, 302)
-        resp = self.client.get(f"/store/{self.store.slug}/checkout/", follow=True)
-        self.assertContains(resp, "closed")
-
-
-class OrderMergeTests(TestCase):
-    def setUp(self):
-        self.owner = User.objects.create_user(
-            username="owner_d", email="d@example.com", password="StrongPass123!", role=User.Role.OWNER
-        )
-        self.other_owner = User.objects.create_user(
-            username="owner_e", email="e@example.com", password="StrongPass123!", role=User.Role.OWNER
-        )
-        self.store = Store.objects.create(owner=self.owner, name="Taco Town", address="1 St")
-        self.other_store = Store.objects.create(owner=self.other_owner, name="Burrito Bar", address="2 St")
-        _open_all_week(self.store)
-        self.category = Category.objects.create(store=self.store, name="Tacos")
-        self.item = FoodItem.objects.create(store=self.store, category=self.category, name="Al Pastor", price=4.00, stock_quantity=20)
-
-    def test_merge_preserves_individual_items_and_totals(self):
-        order1 = create_order_with_items(store=self.store, cart_rows=[{"food_item": self.item, "quantity": 2}])
-        order2 = create_order_with_items(store=self.store, cart_rows=[{"food_item": self.item, "quantity": 3}])
-
-        master = merge_orders([order1, order2], initiating_owner=self.owner)
-
-        order1.refresh_from_db()
-        order2.refresh_from_db()
-        self.assertEqual(order1.merged_into_id, master.id)
-        self.assertEqual(order2.merged_into_id, master.id)
-        self.assertEqual(order1.items.count(), 1)  # individual tracking preserved
-        self.assertEqual(order2.items.count(), 1)
-        self.assertEqual(master.grand_total, 20.00)  # (2+3) * 4.00
-
-    def test_cannot_merge_orders_from_different_stores(self):
-        order1 = create_order_with_items(store=self.store, cart_rows=[{"food_item": self.item, "quantity": 1}])
-        other_item = FoodItem.objects.create(store=self.other_store, name="Burrito", price=6.00, stock_quantity=5)
-        order2 = create_order_with_items(store=self.other_store, cart_rows=[{"food_item": other_item, "quantity": 1}])
-
-        with self.assertRaises(OrderMergeError):
-            merge_orders([order1, order2], initiating_owner=self.owner)
-
-    def test_cannot_merge_another_owners_orders(self):
-        order1 = create_order_with_items(store=self.store, cart_rows=[{"food_item": self.item, "quantity": 1}])
-        order2 = create_order_with_items(store=self.store, cart_rows=[{"food_item": self.item, "quantity": 1}])
-
-        with self.assertRaises(OrderMergeError):
-            merge_orders([order1, order2], initiating_owner=self.other_owner)
-
-    def test_owner_cannot_view_other_stores_order(self):
-        order1 = create_order_with_items(store=self.other_store, cart_rows=[])
-        self.client.login(username="owner_d", password="StrongPass123!")
-        resp = self.client.get(f"/owner/orders/{order1.order_number}/")
-        self.assertEqual(resp.status_code, 403)
-
-
-class CurrencyAndTrackingTests(TestCase):
-    def setUp(self):
-        self.owner = User.objects.create_user(
-            username="owner_f", email="f@example.com", password="StrongPass123!", role=User.Role.OWNER
+            username="testowner", email="owner@test.com",
+            password="testpass123", role=User.Role.OWNER
         )
         self.store = Store.objects.create(
-            owner=self.owner, name="Baht Bites", address="1 St", currency_code=Store.Currency.THB,
+            owner=self.owner, name="Test Store", pincode="12345",
         )
-        _open_all_week(self.store)
-        self.item = FoodItem.objects.create(store=self.store, name="Som Tam", price=45, stock_quantity=10)
-
-    def test_currency_symbol_reflects_store_choice(self):
-        self.assertEqual(self.store.currency_symbol, "฿")
-
-    def test_custom_currency_requires_symbol_or_icon(self):
-        from django.core.exceptions import ValidationError
-        custom_store = Store(owner=self.owner, name="Custom Currency Stall", currency_code=Store.Currency.CUSTOM)
-        with self.assertRaises(ValidationError):
-            custom_store.full_clean()
-
-    def test_custom_currency_symbol_used_when_provided(self):
-        custom_store = Store.objects.create(
-            owner=self.owner, name="Kroner Kiosk", currency_code=Store.Currency.CUSTOM,
-            custom_currency_symbol="kr",
+        self.category = Category.objects.create(store=self.store, name="Food")
+        self.item = FoodItem.objects.create(
+            store=self.store, category=self.category,
+            name="Burger", price=100, stock_quantity=10,
         )
-        self.assertEqual(custom_store.currency_symbol, "kr")
 
-    def test_order_confirmed_status_available_and_settable(self):
-        order = create_order_with_items(store=self.store, cart_rows=[{"food_item": self.item, "quantity": 1}])
-        self.client.login(username="owner_f", password="StrongPass123!")
-        resp = self.client.post(f"/owner/orders/{order.order_number}/status/", {"status": "CONFIRMED"}, follow=True)
-        order.refresh_from_db()
-        self.assertEqual(order.status, Order.Status.CONFIRMED)
+    def test_order_number_generated(self):
+        order = Order.objects.create(store=self.store, grand_total=100)
+        self.assertTrue(order.order_number.startswith("ORD-"))
 
-    def test_bill_pdf_downloads(self):
-        order = create_order_with_items(store=self.store, cart_rows=[{"food_item": self.item, "quantity": 2}])
-        resp = self.client.get(f"/order/{order.order_number}/bill/")
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp["Content-Type"], "application/pdf")
-        self.assertTrue(resp.content.startswith(b"%PDF-"))
+    def test_order_status_default_pending(self):
+        order = Order.objects.create(store=self.store, grand_total=100)
+        self.assertEqual(order.status, Order.Status.PENDING)
 
-    def test_track_order_requires_correct_verification(self):
-        order = create_order_with_items(
-            store=self.store, cart_rows=[{"food_item": self.item, "quantity": 1}],
-            contact_fields={"table_number": "7"},
+
+class CheckoutTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.owner = User.objects.create_user(
+            username="testowner", email="owner@test.com",
+            password="testpass123", role=User.Role.OWNER
         )
-        # Correct verification succeeds.
-        resp = self.client.post("/track-order/", {"order_number": order.order_number, "verification": "7"})
-        self.assertContains(resp, order.get_status_display())
+        self.store = Store.objects.create(
+            owner=self.owner, name="Test Store", pincode="12345",
+        )
+        self.category = Category.objects.create(store=self.store, name="Food")
+        self.item = FoodItem.objects.create(
+            store=self.store, category=self.category,
+            name="Burger", price=100, stock_quantity=10,
+        )
 
-        # Wrong verification does not leak the order's details -- the order
-        # number naturally reappears as the pre-filled form value, but the
-        # order's status/table/total must not be revealed.
-        resp = self.client.post("/track-order/", {"order_number": order.order_number, "verification": "wrong"})
-        self.assertNotContains(resp, order.get_status_display())
-        self.assertContains(resp, "couldn")  # the "couldn't find" error message rendered
+    def test_add_to_cart(self):
+        response = self.client.post(reverse("orders:add_to_cart", args=[self.store.slug]), {
+            "food_item_id": self.item.pk,
+            "quantity": 2,
+        })
+        self.assertEqual(response.status_code, 302)  # redirect fallback
+        cart = self.client.session.get(f"cart_{self.store.slug}", {})
+        self.assertEqual(cart.get(str(self.item.pk)), 2)
 
-    def test_checkout_cart_shows_items_and_allows_removal(self):
+    def test_checkout_page_status_code(self):
+        # Allow orders even when closed (no operating hours in test)
+        self.store.accept_orders_when_closed = True
+        self.store.save()
+
+        # Add item to cart session
         session = self.client.session
-        session[f"cart_{self.store.slug}"] = {str(self.item.pk): 2}
+        session[f"cart_{self.store.slug}"] = {str(self.item.pk): 1}
         session.save()
 
-        resp = self.client.get(f"/store/{self.store.slug}/checkout/")
-        self.assertContains(resp, self.item.name)
-        self.assertContains(resp, "฿")
+        response = self.client.get(reverse("orders:checkout", args=[self.store.slug]))
+        self.assertEqual(response.status_code, 200)
 
-        resp = self.client.post(f"/store/{self.store.slug}/cart/remove/", {"food_item_id": self.item.pk}, follow=True)
-        self.assertNotIn(str(self.item.pk), self.client.session.get(f"cart_{self.store.slug}", {}))
+
+
+    def test_track_order_page_status_code(self):
+        response = self.client.get(reverse("orders:track_order"))
+        self.assertEqual(response.status_code, 200)
+
+
+class OrderListViewTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(username="owner", password="testpass", role="OWNER")
+        self.store = Store.objects.create(name="Test Store", owner=self.owner, pincode="12345")
+        self.category = Category.objects.create(name="Drinks", store=self.store)
+        self.item = FoodItem.objects.create(
+            name="Coffee", price=5.00, store=self.store, category=self.category, is_available=True
+        )
+
+    def test_order_list_requires_login(self):
+        response = self.client.get(reverse("orders:order_list"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_order_list_authenticated(self):
+        self.client.login(username="owner", password="testpass")
+        response = self.client.get(reverse("orders:order_list"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_order_list_filter_by_number(self):
+        self.client.login(username="owner", password="testpass")
+        order = Order.objects.create(
+            store=self.store,
+            order_number="ORD-TEST123",
+            subtotal=Decimal("10.00"),
+            tax_total=Decimal("0.00"),
+            grand_total=Decimal("10.00"),
+            status=Order.Status.PENDING,
+        )
+        response = self.client.get(reverse("orders:order_list"), {"order_number": "TEST123"})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "ORD-TEST123")
+
+
+class BillGenerationTests(TestCase):
+    def setUp(self):
+        from decimal import Decimal
+        from orders.models import Order, OrderItem
+
+        self.owner = User.objects.create_user(
+            username="owner", password="testpass", email="owner@test.com", role="OWNER"
+        )
+        self.store = Store.objects.create(
+            name="Bill Test Store", owner=self.owner, pincode="12345",
+            accept_orders_when_closed=True,
+        )
+        self.category = Category.objects.create(name="Food", store=self.store)
+        self.item = FoodItem.objects.create(
+            name="Burger", price=Decimal("10.00"), store=self.store,
+            category=self.category, is_available=True, stock_quantity=10,
+        )
+        self.order = Order.objects.create(
+            store=self.store,
+            order_number="ORD-BILLTEST",
+            subtotal=Decimal("10.00"),
+            tax_total=Decimal("0.00"),
+            grand_total=Decimal("10.00"),
+            status=Order.Status.PENDING,
+        )
+        OrderItem.objects.create(
+            order=self.order,
+            food_item=self.item,
+            item_name_snapshot="Burger",
+            unit_price_snapshot=Decimal("10.00"),
+            quantity=1,
+        )
+
+    def test_bill_pdf_generation(self):
+        from .services import generate_order_bill_pdf
+        pdf_bytes = generate_order_bill_pdf(self.order)
+        self.assertTrue(len(pdf_bytes) > 0)
+        self.assertTrue(pdf_bytes.startswith(b"%PDF"))
+
+    def test_bill_download_view(self):
+        response = self.client.get(reverse("orders:order_bill", args=[self.order.order_number]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")

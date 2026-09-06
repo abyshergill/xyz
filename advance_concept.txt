@@ -1,0 +1,312 @@
+Complete Fixed docker-compose.yml
+Replace your entire file with this:
+
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_DB: ${DJANGO_DB_NAME}
+      POSTGRES_USER: ${DJANGO_DB_USER}
+      POSTGRES_PASSWORD: ${DJANGO_DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    restart: always
+    networks:
+      - app-network
+
+  web:
+    build: .
+    container_name: django_app
+    restart: always
+    # No command: override — Dockerfile CMD uses correct config.wsgi
+    volumes:
+      # No .:/app mount — use the built Docker image
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    environment:
+      - DJANGO_USE_POSTGRES=True
+      - DJANGO_DB_NAME=${DJANGO_DB_NAME}
+      - DJANGO_DB_USER=${DJANGO_DB_USER}
+      - DJANGO_DB_PASSWORD=${DJANGO_DB_PASSWORD}
+      - DJANGO_DB_HOST=db
+      - DJANGO_DB_PORT=${DJANGO_DB_PORT}
+      - DJANGO_REDIS_URL=redis://redis:6379/1
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DEBUG=False
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS},127.0.0.1,localhost
+      - DJANGO_CSRF_TRUSTED_ORIGINS=${DJANGO_CSRF_TRUSTED_ORIGINS}
+      - DJANGO_TIME_ZONE=${DJANGO_TIME_ZONE}
+      - DJANGO_SITE_BASE_URL=${DJANGO_SITE_BASE_URL}
+      - DJANGO_SECURE_SSL_REDIRECT=True
+      - DJANGO_EMAIL_BACKEND=${DJANGO_EMAIL_BACKEND}
+      - DJANGO_EMAIL_HOST=${DJANGO_EMAIL_HOST}
+      - DJANGO_EMAIL_PORT=${DJANGO_EMAIL_PORT}
+      - DJANGO_EMAIL_USE_TLS=${DJANGO_EMAIL_USE_TLS}
+      - DJANGO_EMAIL_HOST_USER=${DJANGO_EMAIL_HOST_USER}
+      - DJANGO_EMAIL_HOST_PASSWORD=${DJANGO_EMAIL_HOST_PASSWORD}
+      - DJANGO_DEFAULT_FROM_EMAIL=${DJANGO_DEFAULT_FROM_EMAIL}
+    depends_on:
+      - db
+      - redis
+    networks:
+      - app-network
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy_proxy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - static_volume:/srv/static
+      - media_volume:/srv/media
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+    networks:
+      - app-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin_gui
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+    networks:
+      - app-network
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
+  caddy_data:
+  caddy_config:
+  pgadmin_data:
+
+networks:
+  app-network:
+    driver: bridge
+yaml
+
+Complete Fixed settings.py — Database + Cache sections
+Find the Database section (around line 70) and replace the entire block with:
+
+# ---------------------------------------------------------------------------
+# Database — switches between SQLite and PostgreSQL based on DJANGO_USE_POSTGRES
+# ---------------------------------------------------------------------------
+if env.bool("DJANGO_USE_POSTGRES", default=False):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env("DJANGO_DB_NAME"),
+            "USER": env("DJANGO_DB_USER"),
+            "PASSWORD": env("DJANGO_DB_PASSWORD"),
+            "HOST": env("DJANGO_DB_HOST", default="db"),
+            "PORT": env("DJANGO_DB_PORT", default="5432"),
+            "CONN_MAX_AGE": 60,
+            "OPTIONS": {
+                "sslmode": env("DJANGO_SSLMODE", default="prefer"),
+            },
+        }
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+python
+
+Find the Cache section (around line 180) and replace with:
+
+# ---------------------------------------------------------------------------
+# Cache (used for login brute-force lockout tracking -- see accounts/throttling.py)
+# ---------------------------------------------------------------------------
+if env.bool("DJANGO_USE_POSTGRES", default=False):
+    # Production: Redis shared across all Gunicorn workers
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": env("DJANGO_REDIS_URL", default="redis://redis:6379/1"),
+            "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+        }
+    }
+else:
+    # Development: in-memory cache (single process)
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        }
+    }
+python
+
+Also fix the Caddyfile
+Change reverse_proxy app:8000 to reverse_proxy web:8000.
+
+Add to requirements.txt
+django-redis>=5.4.0
+
+Add to .env
+PGADMIN_DEFAULT_EMAIL=admin@yourtrolley.com
+PGADMIN_DEFAULT_PASSWORD=ChangeMeStrongPassword123
+DJANGO_REDIS_URL=redis://redis:6379/1
+
+After applying all fixes — Production Readiness Checklist
+Category	Item	Status
+Container	Correct WSGI module (config.wsgi)	✅ Fixed
+Container	No host code mount (uses built image)	✅ Fixed
+Container	DEBUG=False (not DJANGO_DEBUG)	✅ Fixed
+Database	PostgreSQL active in production	✅ Fixed
+Cache	Redis for shared lockout state	✅ Fixed
+Static/Media	Caddy volumes match Caddyfile paths	✅ Fixed
+Security	HSTS, SSL redirect, secure cookies	✅ Already in settings.py
+Security	Argon2 password hashing	✅ Already in settings.py
+Security	Brute-force lockout (throttling.py)	✅ Already correct
+Security	CSRF trusted origins	✅ Fixed (env var passed)
+Security	Allowed hosts includes 127.0.0.1	✅ Fixed
+Email	SMTP env vars passed to container	✅ Fixed
+Logging	Security events logged to file	✅ Already in settings.py
+HTTPS	Caddy auto-provisions Let's Encrypt	✅ Already in Caddyfile
+Health	Dockerfile healthcheck	✅ Already in Dockerfile
+Non-root	Container runs as appuser	✅ Already in Dockerfile
+
+
+
+After you apply the 6 fixes above, your application will be production-ready. The security hardening in settings.py (HSTS, Argon2, CSRF, session cookies, clickjacking, XSS filtering) is already correct — it was just being bypassed because DEBUG was staying True due to the env var name mismatch.
+
+
+
+
+
+GLM 5.2
+<script src="https://cdn.tailwindcss.com"></script>  i want to copy and put inside my project instead of relay on this cdn how inside base.html file
+
+4:27 PM
+
+
+
+Show reasoning
+The cdn.tailwindcss.com script is a JIT compiler (JavaScript), not a static CSS file — you can't just save it as .css. Here are two approaches:
+
+Approach 1 — Quick: Self-host the Play CDN script (still JIT, but no external dependency)
+Step 1 — Download the script to your static folder:
+
+curl -o static/js/tailwind.js https://cdn.tailwindcss.com
+bash
+
+Or manually download from https://cdn.tailwindcss.com and save it as static/js/tailwind.js.
+
+Step 2 — Update base.html:
+
+Replace this line:
+
+<script src="https://cdn.tailwindcss.com"></script>
+html
+
+With:
+
+<script src="{% static 'js/tailwind.js' %}"></script>
+html
+
+Make sure {% load static %} is at the top of base.html:
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width-width, initial-scale=1.0">
+  <title>{% block title %}YourTrolley{% endblock %}</title>
+  <script src="{% static 'js/tailwind.js' %}"></script>
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+</head>
+html
+
+This works but still compiles in the browser — slightly slower page load, and the file is ~400KB.
+
+Approach 2 — Production-recommended: Build a static CSS file with Tailwind CLI
+This generates a small, static .css file with only the classes you actually use — much faster and truly production-ready.
+
+Step 1 — Install Tailwind CLI (one-time):
+
+npm install -D tailwindcss
+npx tailwindcss init
+bash
+
+Step 2 — Create tailwind.config.js in your project root:
+
+module.exports = {
+  content: [
+    "./templates/**/*.html",
+    "./stores/templates/**/*.html",
+    "./orders/templates/**/*.html",
+    "./accounts/templates/**/*.html",
+    "./analytics/templates/**/*.html",
+  ],
+  theme: { extend: {} },
+  plugins: [],
+}
+js
+
+Step 3 — Create src/input.css:
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+css
+
+Step 4 — Build the CSS:
+
+npx tailwindcss -i ./src/input.css -o ./static/css/tailwind.css --minify
+bash
+
+Step 5 — Update base.html:
+
+Replace:
+
+<script src="https://cdn.tailwindcss.com"></script>
+html
+
+With:
+
+<link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+html
+
+Step 6 — Add build step to docker-entrypoint.sh (before collectstatic):
+
+echo "Building Tailwind CSS..."
+npx tailwindcss -i ./src/input.css -o ./static/css/tailwind.css --minify
+sh
+
+Comparison
+Approach 1 (Self-host JIT)	Approach 2 (Build static CSS)
+File size	~400KB JS	~20-30KB CSS
+Load speed	Slower (compiles in browser)	Faster (pre-compiled)
+Requires Node.js	No	Yes (build time only)
+Production-ready	Acceptable	Recommended
+Flash of unstyled content	Possible	No
+
+
+
+My recommendation: Use Approach 1 right now (quick, no Node.js needed). When you're ready to optimize for production, switch to Approach 2 — the built CSS file is ~15× smaller and loads instantly with no JavaScript compilation step.

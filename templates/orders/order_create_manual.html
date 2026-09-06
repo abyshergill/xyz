@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% load currency_tags %}
+{% block title %}Create Order{% endblock %}
+{% block content %}
+
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-xl font-boldmb-4">Create Order &mdash; {{ store.name }}</h1>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        <!-- Items section -->
+        <div class="card mb-4">
+            <h2 class="font-semibold mb-3">Add Items</h2>
+            <div id="item-rows" class="space-y-3">
+                <!-- Row template will be cloned by JS -->
+            </div>
+            <button type="button" onclick="addItemRow()" class="btn btn-secondary text-sm mt-3">+ Add Another Item</button>
+        </div>
+
+        <!-- Customer info section -->
+        <div class="card mb-4">
+            <h2 class="font-semibold mb-3">Customer Information</h2>
+            {% for field in form %}
+            <div class="mb-3">
+                <label class="block text-sm font-medium mb-1">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}<p class="text-red-600 text-xs">{{ error }}</p>{% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <button type="submit" class="btn w-full">Create Order</button>
+    </form>
+</div>
+
+<script>
+// Item data passed from the view
+const allItems = JSON.parse('{{ items_json|escapejs }}');
+
+// Build category list from items
+const categories = {};
+allItems.forEach(item => {
+    if (!categories[item.category_pk]) {
+        categories[item.category_pk] = {
+            name: item.category_name,
+            items: []
+        };
+    }
+    categories[item.category_pk].items.push(item);
+});
+
+function addItemRow() {
+    const container = document.getElementById('item-rows');
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'flex gap-2 items-end border-b pb-3';
+
+    // Category dropdown
+    const catDiv = document.createElement('div');
+    catDiv.className = 'flex-1';
+    catDiv.innerHTML = `
+        <label class="block text-xs font-medium mb-1">Category</label>
+        <select class="category-select w-full px-3 py-2 border border-gray-300 rounded-lg outline-none" onchange="updateItems(this)">
+            <option value="">Select category...</option>
+            ${Object.entries(categories).map(([pk, cat]) => `<option value="${pk}">${cat.name}</option>`).join('')}
+        </select>
+    `;
+
+    // Item dropdown (disabled until category is selected)
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'flex-1';
+    itemDiv.innerHTML = `
+        <label class="block text-xs font-medium mb-1">Item</label>
+        <select name="food_item_pk[]" class="item-select w-full px-3 py-2 border border-gray-300 rounded-lg outline-none" disabled>
+            <option value="">Select category first...</option>
+        </select>
+    `;
+
+    // Quantity
+    const qtyDiv = document.createElement('div');
+    qtyDiv.innerHTML = `
+        <label class="block text-xs font-medium mb-1">Qty</label>
+        <input type="number" name="quantity[]" value="1" min="1" max="99" class="w-20 px-3 py-2 border border-gray-300 rounded-lg outline-none">
+    `;
+
+    // Remove button
+    const btnDiv = document.createElement('div');
+    btnDiv.innerHTML = `
+        <button type="button" onclick="this.parentElement.parentElement.remove()" class="btn-danger text-xs px-2 py-2">Remove</button>
+    `;
+
+    rowDiv.appendChild(catDiv);
+    rowDiv.appendChild(itemDiv);
+    rowDiv.appendChild(qtyDiv);
+    rowDiv.appendChild(btnDiv);
+    container.appendChild(rowDiv);
+}
+
+function updateItems(categorySelect) {
+    const row = categorySelect.parentElement.parentElement;
+    const itemSelect = row.querySelector('.item-select');
+    const catPk = categorySelect.value;
+
+    if (!catPk) {
+        itemSelect.disabled = true;
+        itemSelect.innerHTML = '<option value="">Select category first...</option>';
+        return;
+    }
+
+    const catItems = categories[catPk].items;
+    itemSelect.disabled = false;
+    itemSelect.innerHTML = '<option value="">Select item...</option>' +
+        catItems.map(item => `<option value="${item.pk}">${item.name} (${item.price})</option>`).join('');
+}
+
+// Add first row on page load
+addItemRow();
+</script>
+
+{% endblock %}

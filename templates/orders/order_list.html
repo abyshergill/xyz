@@ -2,41 +2,83 @@
 {% load currency_tags %}
 {% block title %}Orders{% endblock %}
 {% block content %}
+<style>
+  select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23666'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1rem;
+    padding-right: 2rem;
+    height: 2.25rem;
+  }
+</style>
 <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
   <h1 class="text-xl font-bold">Orders &mdash; {{ store.name }}</h1>
-  <a href="{% url 'orders:order_merge' %}" class="btn btn-secondary">Merge Orders</a>
+  <div class="flex gap-2">
+    <a href="{% url 'orders:order_create_manual' %}" class="btn">+ Create Order</a>
+    <a href="{% url 'orders:order_merge' %}" class="btn btn-secondary">Merge Orders</a>
+  </div>
 </div>
 
 <form method="get" class="card mb-4">
-  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-end">
+    <!-- Filter by Order Number -->
+    <div>
+      <label class="block text-xs font-medium mb-1">Order Number</label>
+      <input type="text" name="order_number" value="{{ order_number_filter }}" placeholder="e.g. ORD-ABC123"
+             class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+    </div>
+    <!-- Filter by Customer Name -->
+    <div>
+      <label class="block text-xs font-medium mb-1">Customer Name</label>
+      <input type="text" name="customer_name" value="{{ customer_name_filter }}" placeholder="Customer name..."
+             class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+    </div>
+    <!-- Filter by Customer Phone -->
+    <div>
+      <label class="block text-xs font-medium mb-1">Customer Phone</label>
+      <input type="text" name="customer_phone" value="{{ customer_phone_filter }}" placeholder="Phone number..."
+             class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+    </div>
+    <!-- Filter by Status -->
     <div>
       <label class="block text-xs font-medium mb-1">Status</label>
-      <select name="status">
+      <select name="status" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
         <option value="">All statuses</option>
         {% for value, label in status_choices %}
           <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
     </div>
+    <!-- From date -->
     <div>
       <label class="block text-xs font-medium mb-1">From date</label>
-      <input type="date" name="date_from" value="{{ date_from }}">
+      <input type="date" name="date_from" value="{{ date_from }}" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
     </div>
+    <!-- To date -->
     <div>
       <label class="block text-xs font-medium mb-1">To date</label>
-      <input type="date" name="date_to" value="{{ date_to }}">
+      <input type="date" name="date_to" value="{{ date_to }}" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
     </div>
+    <!-- Min total -->
     <div>
       <label class="block text-xs font-medium mb-1">Min total ({% currency_symbol_only store %})</label>
-      <input type="number" step="0.01" min="0" name="min_total" value="{{ min_total }}" placeholder="0.00">
+      <input type="number" step="0.01" min="0" name="min_total" value="{{ min_total }}" placeholder="0.00"
+             class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
     </div>
+    <!-- Max total -->
     <div>
       <label class="block text-xs font-medium mb-1">Max total ({% currency_symbol_only store %})</label>
-      <input type="number" step="0.01" min="0" name="max_total" value="{{ max_total }}" placeholder="0.00">
+      <input type="number" step="0.01" min="0" name="max_total" value="{{ max_total }}" placeholder="0.00"
+             class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
     </div>
+    <!-- Sort by -->
     <div>
       <label class="block text-xs font-medium mb-1">Sort by</label>
-      <select name="sort">
+      <select name="sort" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
         {% for value, label in sort_choices.items %}
           <option value="{{ value }}" {% if sort == value %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
@@ -51,21 +93,30 @@
 
 <div class="card overflow-x-auto">
 <table class="w-full text-sm">
-  <thead><tr class="text-left border-b"><th class="py-2">Order #</th><th>Store</th><th>Customer</th><th>Address</th><th>Status</th><th>Total</th><th>Placed</th><th></th></tr></thead>
+  <thead><tr class="text-left border-b">
+    <th class="py-2">Order #</th><th>Customer</th><th>Phone</th><th>Address</th><th>Status</th><th>Total</th><th>Placed</th><th>Actions</th>
+  </tr></thead>
   <tbody>
   {% for order in orders %}
     <tr class="border-b">
-                    <td class="py-2">{{ order.order_number }}</td>
-                    <td>{{ order.store.name }}</td>
-                    <td>{{ order.customer_name|default:"—" }}</td>
-                    <td class="text-xs">{{ order.customer_address|default:"—" }}</td>
-                    <td>{{ order.get_status_display }}</td>
-                    <td>{% currency order.store order.grand_total %}</td>
-                    <td>{{ order.created_at|date:"M d, H:i" }}</td>
-                    <td><a href="{% url 'orders:order_bill' order.order_number %}" class="text-orange-600 underline">Bill</a></td>
-                </tr>
+      <td class="py-2">
+        <a href="{% url 'orders:order_detail' order.order_number %}" class="text-orange-600 underline">{{ order.order_number }}</a>
+        {% if order.is_master %}<span class="text-xs bg-blue-100 text-blue-700 px-1 rounded ml-1">Merged</span>{% endif %}
+      </td>
+      <td>{{ order.customer_name|default:"—" }}</td>
+      <td class="text-xs">{{ order.contact_phone|default:"—" }}</td>
+      <td class="text-xs">{{ order.customer_address|default:"—" }}</td>
+      <td>{{ order.get_status_display }}</td>
+      <td>{% currency order.store order.grand_total %}</td>
+      <td>{{ order.created_at|date:"M d, H:i" }}</td>
+      <td class="whitespace-nowrap">
+        <a href="{% url 'orders:order_edit' order.order_number %}" class="text-blue-600 hover:underline text-xs">Edit</a>
+        <span class="text-gray-300">|</span>
+        <a href="{% url 'orders:order_bill' order.order_number %}" class="text-orange-600 hover:underline text-xs">Bill</a>
+      </td>
+    </tr>
   {% empty %}
-    <tr><td colspan="5" class="py-2 text-gray-500">No orders match these filters.</td></tr>
+    <tr><td colspan="8" class="py-2 text-gray-500">No orders match these filters.</td></tr>
   {% endfor %}
   </tbody>
 </table>

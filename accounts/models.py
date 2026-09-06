@@ -24,6 +24,7 @@ class User(AbstractUser):
         message="Enter a valid mobile number (7-15 digits, optional leading +).",
     )
     mobile_number = models.CharField(max_length=16, validators=[phone_regex], blank=True)
+    full_name = models.CharField(max_length=150, blank=True, help_text="Customer's full name.")
 
     is_verified = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -83,3 +84,25 @@ class OwnerProfile(models.Model):
 
     def __str__(self):
         return f"Owner profile: {self.user.username}"
+
+class CustomerAddress(models.Model):
+    """Multiple saved addresses for a customer, each with an alias."""
+    class Alias(models.TextChoices):
+        HOME = "HOME", "Home"
+        OFFICE = "OFFICE", "Office"
+        OTHER = "OTHER", "Other"
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="addresses")
+    alias = models.CharField(max_length=10, choices=Alias.choices, default=Alias.HOME)
+    full_name = models.CharField(max_length=150, blank=True, help_text="Recipient name at this address.")
+    address = models.CharField(max_length=255)
+    pincode = models.CharField(max_length=12, blank=True)
+    phone_number = models.CharField(max_length=16, blank=True)
+    is_default = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-is_default", "-created_at"]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_alias_display()} ({self.address[:30]})"

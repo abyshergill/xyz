@@ -18,21 +18,30 @@
     </form>
   </div>
   <div class="card">
-    <h2 class="font-semibold mb-2">Existing Categories</h2>
-    <ul class="divide-y">
-      {% for category in categories %}
-        <li class="py-2 flex justify-between items-center">
-          <span>{{ category.name }}</span>
-          <form method="post" action="{% url 'stores:category_delete' store.slug category.pk %}"
-                onsubmit="return confirm('Delete this category?');">
-            {% csrf_token %}
-            <button type="submit" class="btn-danger text-xs px-2 py-1">Delete</button>
-          </form>
-        </li>
-      {% empty %}
-        <li class="py-2 text-gray-500">No categories yet.</li>
-      {% endfor %}
-    </ul>
+      <h2 class="font-semibold mb-2">Existing Categories</h2>
+      <ul class="divide-y">
+          {% for category in categories %}
+          <li class="py-3 flex justify-between items-center">
+              <span class="font-medium">{{ category.name }}</span>
+              <div class="flex gap-2">
+                  <a href="{% url 'stores:category_edit' store.slug category.pk %}"
+                     class="inline-flex items-center gap-1 text-xs font-medium text-white bg-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-700 transition">
+                    ✏️ Edit
+                  </a>
+                  <form method="post" action="{% url 'stores:category_delete' store.slug category.pk %}"
+                        onsubmit="return confirm('Delete this category?');">
+                      {% csrf_token %}
+                      <button type="submit"
+                              class="inline-flex items-center gap-1 text-xs font-medium text-white bg-red-600 px-3 py-1.5 rounded-lg hover:bg-red-700 transition">
+                        🗑️ Delete
+                      </button>
+                  </form>
+              </div>
+          </li>
+          {% empty %}
+          <li class="py-2 text-gray-500">No categories yet.</li>
+          {% endfor %}
+      </ul>
   </div>
 </div>
 {% endblock %}

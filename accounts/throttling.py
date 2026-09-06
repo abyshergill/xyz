@@ -19,6 +19,11 @@ MAX_ATTEMPTS_PER_ACCOUNT = 5   # failed attempts against one username from one I
 MAX_ATTEMPTS_PER_IP = 20       # failed attempts against ANY username from one IP
 LOCKOUT_SECONDS = 15 * 60      # 15 minutes
 
+# My developtment
+# MAX_ATTEMPTS_PER_ACCOUNT = 9999   # high limit for development
+# MAX_ATTEMPTS_PER_IP = 9999         # high limit for development
+# LOCKOUT_SECONDS = 15 * 60          # 15 minutes
+
 
 def get_client_ip(request) -> str:
     """
@@ -44,28 +49,21 @@ def _account_key(ip: str, username: str) -> str:
 def _ip_key(ip: str) -> str:
     return f"loginattempts:ip:{ip}"
 
-
 def is_locked_out(request, username: str) -> bool:
     ip = get_client_ip(request)
     account_attempts = cache.get(_account_key(ip, username), 0)
     ip_attempts = cache.get(_ip_key(ip), 0)
     return account_attempts >= MAX_ATTEMPTS_PER_ACCOUNT or ip_attempts >= MAX_ATTEMPTS_PER_IP
 
-
 def register_failed_attempt(request, username: str) -> tuple[int, int]:
-    """Increments both counters (sliding LOCKOUT_SECONDS window) and returns (account_attempts, ip_attempts)."""
     ip = get_client_ip(request)
-
     account_key = _account_key(ip, username)
     account_attempts = cache.get(account_key, 0) + 1
     cache.set(account_key, account_attempts, timeout=LOCKOUT_SECONDS)
-
     ip_key = _ip_key(ip)
     ip_attempts = cache.get(ip_key, 0) + 1
     cache.set(ip_key, ip_attempts, timeout=LOCKOUT_SECONDS)
-
     return account_attempts, ip_attempts
-
 
 def clear_attempts(request, username: str) -> None:
     """Called on a successful login to un-penalize that specific account immediately."""

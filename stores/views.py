@@ -1,5 +1,5 @@
 import logging
-
+from django.http import JsonResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -7,16 +7,17 @@ from django.core.paginator import Paginator
 from django.db.models import Case, IntegerField, Q, Value, When
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
-
+from stores.models import Notification
 from .forms import CategoryForm, ContactForm, FoodItemForm, OperatingHoursFormSet, StoreForm
 from .models import Category, ContactMessage, FoodItem, OperatingHours, Store
 from .utils import generate_store_qr_code, validate_and_process_image
 from django.conf import settings
+from .models import Category, FoodItem, Notification, OperatingHours, Store
+
 
 logger = logging.getLogger("stores")
 
-ITEMS_PER_CATEGORY_PREVIEW = 4  # <-- number of items shown per category on store detail
-
+ITEMS_PER_CATEGORY_PREVIEW = 3  
 
 def _require_owner_of(request, store):
     """
@@ -96,72 +97,55 @@ def store_list(request):
 
 
 def store_detail(request, slug):
-    """
-    Public menu page (also where a scanned QR code lands).
-
-    Features:
-      1. Category menubar — horizontal nav bar listing all categories as
-         anchor links so customers can jump to a category section.
-      2. 4-item preview per category — each category shows only the first
-         ITEMS_PER_CATEGORY_PREVIEW items.  A 'See all in <category>' link
-         expands to show every item in that category.
-      3. Item search — a search box lets customers filter items by name
-         within this store.  When searching, the 4-item limit is removed
-         and only matching items are shown.
-    """
+    """Public menu page with category menubar, 4-item preview, and item search."""
     store = get_object_or_404(Store, slug=slug, is_active=True)
 
-    # All categories for this store (for the menubar + sections)
-    categories = (
-        store.categories
-        .prefetch_related("items")
-        .order_by("display_order", "name")
-    )
-
-    # --- Item search within the store ---
     item_search = request.GET.get("item_q", "").strip()
-
-    # --- "See all" expansion for a single category ---
     expand_category = request.GET.get("expand", "").strip()
 
-    # Build a list of dicts with category + its items (limited to 4 unless
-    # expanded or searching)
+    categories = store.categories.prefetch_related(
+        "items"
+    ).order_by("display_order", "name")
+
+    # Build category_data with 4-item preview (or all items if searching/expanding)
     category_data = []
-    for category in categories:
-        items = category.items.all()
+    for cat in categories:
+        all_items = cat.items.filter(is_available=True).order_by("name")
 
-        # If item search is active, filter items by name
         if item_search:
-            items = items.filter(name__icontains=item_search)
+            # When searching, filter items by name across ALL categories
+            all_items = all_items.filter(name__icontains=item_search)
 
-        # Only show available items on the public page
-        items = [it for it in items if it.is_available]
+        total_count = all_items.count()
 
-        is_expanded = (expand_category == category.name) or bool(item_search)
-
-        if not is_expanded:
-            visible_items = items[:ITEMS_PER_CATEGORY_PREVIEW]
+        if item_search or expand_category == cat.name:
+            # Show all items when searching or when this category is expanded
+            shown_items = list(all_items)
+            is_expanded = True
         else:
-            visible_items = items
+            # Show only first 3 items by default
+            shown_items = list(all_items[:3])
+            is_expanded = False
 
-        total_count = len(items)
+        hidden_count = total_count - len(shown_items)
 
-        category_data.append({
-            "category": category,
-            "items": visible_items,
-            "total_count": total_count,
-            "hidden_count": total_count - len(visible_items),
-            "is_expanded": is_expanded,
-        })
+        if total_count > 0 or item_search:
+            category_data.append({
+                "category": cat,
+                "items": shown_items,
+                "total_count": total_count,
+                "hidden_count": hidden_count,
+                "is_expanded": is_expanded,
+            })
 
     cart = request.session.get(f"cart_{store.slug}", {})
 
     return render(request, "stores/store_detail.html", {
         "store": store,
         "category_data": category_data,
+        "item_search": item_search,
         "store_is_open": store.is_open_now(),
         "cart_item_count": sum(cart.values()) if cart else 0,
-        "item_search": item_search,
     })
 
 
@@ -310,6 +294,24 @@ def category_delete(request, slug, pk):
     messages.success(request, "Category deleted.")
     return redirect("stores:category_list", slug=slug)
 
+@login_required
+@require_http_methods(["GET", "POST"])
+def category_edit(request, slug, pk):
+    store = get_object_or_404(Store, slug=slug)
+    _require_owner_of(request, store)
+    category = get_object_or_404(Category, pk=pk, store=store)
+    if request.method == "POST":
+        form = CategoryForm(request.POST, instance=category)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Category updated.")
+            return redirect("stores:category_list", slug=slug)
+    else:
+        form = CategoryForm(instance=category)
+    return render(request, "stores/category_edit.html", {
+        "store": store, "form": form, "category": category,
+    })
+
 
 # --- Food item management ---
 
@@ -318,7 +320,49 @@ def item_list(request, slug):
     store = get_object_or_404(Store, slug=slug)
     _require_owner_of(request, store)
     items = store.food_items.select_related("category")
-    return render(request, "stores/item_list.html", {"store": store, "items": items})
+
+    # Filter by category
+    category_filter = request.GET.get("category", "").strip()
+    if category_filter:
+        items = items.filter(category__name=category_filter)
+
+    # Search by item name
+    item_search = request.GET.get("item_q", "").strip()
+    if item_search:
+        items = items.filter(name__icontains=item_search)
+
+    # Search by unique code
+    code_search = request.GET.get("code_q", "").strip()
+    if code_search:
+        items = items.filter(item_code__icontains=code_search)
+
+    # Pagination — 20 items per page
+    paginator = Paginator(items, 20)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    # All categories for the filter dropdown
+    all_categories = store.categories.all().order_by("display_order", "name")
+
+    # Preserve filter params in pagination links
+    filter_params = []
+    if category_filter:
+        filter_params.append(f"category={category_filter}")
+    if item_search:
+        filter_params.append(f"item_q={item_search}")
+    if code_search:
+        filter_params.append(f"code_q={code_search}")
+    filter_query_string = "&".join(filter_params)
+
+    return render(request, "stores/item_list.html", {
+        "store": store,
+        "page_obj": page_obj,
+        "items": page_obj,
+        "all_categories": all_categories,
+        "category_filter": category_filter,
+        "item_search": item_search,
+        "code_search": code_search,
+        "filter_query_string": filter_query_string,
+    })
 
 
 @login_required
@@ -330,35 +374,57 @@ def item_create(request, slug):
         if form.is_valid():
             item = form.save(commit=False)
             item.store = store
+            # Auto-generate item code if left blank
+            if not item.item_code:
+                item.item_code = f"ITEM-{item.pk or FoodItem.objects.count() + 1:04d}"
             if "image" in request.FILES:
                 item.image = validate_and_process_image(
                     request.FILES["image"], settings.FOOD_ITEM_IMAGE_MAX_DIMENSION
                 )
             item.save()
+            # Check low stock and notify owner
+            if item.is_low_stock:
+                Notification.objects.create(
+                    user=store.owner,
+                    notification_type=Notification.Type.LOW_STOCK,
+                    title=f"Low stock: {item.name}",
+                    message=f"'{item.name}' is at {item.stock_quantity} units (minimum: {item.min_stock_quantity}).",
+                )
             messages.success(request, "Item added to menu.")
             return redirect("stores:item_list", slug=slug)
+        messages.error(request, "Please correct the errors below.")
     else:
         form = FoodItemForm(store=store)
     return render(request, "stores/item_form.html", {"store": store, "form": form, "is_create": True})
-
 
 @login_required
 def item_edit(request, slug, pk):
     store = get_object_or_404(Store, slug=slug)
     _require_owner_of(request, store)
     item = get_object_or_404(FoodItem, pk=pk, store=store)
-
+    old_stock = item.stock_quantity
     if request.method == "POST":
         form = FoodItemForm(request.POST, request.FILES, instance=item, store=store)
         if form.is_valid():
             updated = form.save(commit=False)
+            if not updated.item_code:
+                updated.item_code = f"ITEM-{updated.pk:04d}"
             if "image" in request.FILES:
                 updated.image = validate_and_process_image(
                     request.FILES["image"], settings.FOOD_ITEM_IMAGE_MAX_DIMENSION
                 )
             updated.save()
+            # Check if stock dropped below minimum and notify owner
+            if updated.is_low_stock and updated.stock_quantity < old_stock:
+                Notification.objects.create(
+                    user=store.owner,
+                    notification_type=Notification.Type.LOW_STOCK,
+                    title=f"Low stock: {updated.name}",
+                    message=f"'{updated.name}' dropped to {updated.stock_quantity} units (minimum: {updated.min_stock_quantity}).",
+                )
             messages.success(request, "Item updated.")
             return redirect("stores:item_list", slug=slug)
+        messages.error(request, "Please correct the errors below.")
     else:
         form = FoodItemForm(instance=item, store=store)
     return render(request, "stores/item_form.html", {"store": store, "form": form, "is_create": False, "item": item})
@@ -402,7 +468,7 @@ def contact_us(request):
 
     # Platform contact information — change these to your real details
     platform_info = {
-        "contact_email": "support@yourtrolley.com",
+        "contact_email": "abyshergill@gmail.com",
         "contact_phone": "+66 2 123 4567",
         "contact_address": "Laem Chabang, Chonburi, Thailand",
     }
@@ -492,3 +558,38 @@ def store_list(request):
         "all_store_categories": all_store_categories,
         "filter_query_string": filter_query_string,
     })
+
+
+@login_required
+def notifications(request):
+    """Show all notifications for the logged-in user."""
+    notifications = request.user.notifications.all()[:50]
+    unread_count = request.user.notifications.filter(is_read=False).count()
+    return render(request, "stores/notifications.html", {
+        "notifications": notifications,
+        "unread_count": unread_count,
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def mark_notification_read(request, pk):
+    """Mark a single notification as read."""
+    notif = get_object_or_404(Notification, pk=pk, user=request.user)
+    notif.is_read = True
+    notif.save(update_fields=["is_read"])
+    return redirect("stores:notifications")
+
+
+@login_required
+@require_http_methods(["POST"])
+def mark_all_notifications_read(request):
+    """Mark all notifications as read."""
+    request.user.notifications.filter(is_read=False).update(is_read=True)
+    return redirect("stores:notifications")
+
+@login_required
+def notification_count_api(request):
+    """Returns unread notification count as JSON for AJAX polling."""
+    count = request.user.notifications.filter(is_read=False).count()
+    return JsonResponse({"unread_count": count})

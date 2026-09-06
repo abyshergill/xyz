@@ -9,7 +9,6 @@
   {% endif %}
   <div class="flex-1">
     <h1 class="text-2xl font-bold">{{ store.name }}</h1>
-    <!-- Store category badge -->
     <span class="inline-block bg-blue-100 text-blue-800 text-xs rounded-full px-2 py-0.5 mt-1 mb-2">
       {{ store.get_store_category_display }}
     </span>
@@ -22,8 +21,18 @@
   </div>
   {% if store.qr_code %}
     <div class="text-center">
-      <img src="{{ store.qr_code.url }}" alt="QR code" class="w-24 h-24 mx-auto">
-      <p class="text-xs text-gray-400">Scan to reorder</p>
+      <img src="{{ store.qr_code.url }}" alt="QR code" class="w-24 h-24 mx-auto rounded-lg" id="qr-image">
+      <p class="text-xs text-gray-400 mt-1">Scan to reorder</p>
+      <div class="mt-2 flex flex-col gap-1.5 items-center">
+        <button type="button" onclick="shareStore()"
+                class="w-full text-xs px-3 py-1.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition flex items-center justify-center gap-1">
+          Share Store
+        </button>
+        <a href="{{ store.qr_code.url }}" download="{{ store.slug }}-qr-code.png"
+           class="w-full text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition flex items-center justify-center gap-1">
+          Download QR
+        </a>
+      </div>
     </div>
   {% endif %}
 </div>
@@ -35,14 +44,16 @@
 {% endif %}
 
 <!-- ===== ITEM SEARCH BAR ===== -->
-<form method="get" class="mb-6 flex gap-2">
+<form method="get" class="mb-6 flex flex-col sm:flex-row gap-2">
   <input type="text" name="item_q" value="{{ item_search }}"
          placeholder="Search items in this store..."
-         class="flex-1 max-w-md px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none">
-  <button type="submit" class="btn">Search Items</button>
-  {% if item_search %}
-    <a href="{% url 'stores:store_detail' store.slug %}" class="btn btn-secondary">Clear</a>
-  {% endif %}
+         class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-base">
+  <div class="flex gap-2">
+    <button type="submit" class="btn flex-1 sm:flex-none">Search</button>
+    {% if item_search %}
+      <a href="{% url 'stores:store_detail' store.slug %}" class="btn btn-secondary flex-1 sm:flex-none">Clear</a>
+    {% endif %}
+  </div>
 </form>
 
 <!-- ===== CATEGORY MENUBAR ===== -->
@@ -66,56 +77,81 @@
 
 <!-- ===== MENU ITEMS BY CATEGORY ===== -->
 {% for cd in category_data %}
-  <div id="cat-{{ cd.category.pk }}" class="scroll-mt-20">
-    <h2 class="text-xl font-semibold mt-6 mb-3">
-      {{ cd.category.name }}
-      <span class="text-sm text-gray-400 font-normal">({{ cd.total_count }} items)</span>
-    </h2>
+  <div id="cat-{{ cd.category.pk }}" class="scroll-mt-20 mb-4">
+    <button type="button"
+            onclick="toggleCategory({{ cd.category.pk }})"
+            class="w-full flex justify-between items-center bg-white shadow-sm rounded-lg px-4 py-3 mb-2 hover:bg-gray-50 transition">
+      <span class="text-lg font-semibold">
+        {{ cd.category.name }}
+        <span class="text-sm text-gray-400 font-normal">({{ cd.total_count }} items)</span>
+      </span>
+      <svg id="arrow-{{ cd.category.pk }}" class="w-5 h-5 text-gray-400 transition-transform {% if forloop.first or item_search or cd.is_expanded %}rotate-180{% endif %}"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+      </svg>
+    </button>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {% for item in cd.items %}
-        <div class="card flex flex-col">
-          {% if item.image %}
-            <img src="{{ item.image.url }}" alt="{{ item.name }}" class="w-full h-32 object-cover rounded mb-2">
-          {% endif %}
-          <h3 class="font-semibold">{{ item.name }}</h3>
-          <p class="text-sm text-gray-500 flex-1">{{ item.description }}</p>
-          <p class="font-bold mt-1">{% currency store item.price %}</p>
-          {% if item.in_stock %}
-            <form method="post" action="{% url 'orders:add_to_cart' store.slug %}" class="mt-2 flex gap-2 items-center">
-              {% csrf_token %}
-              <input type="hidden" name="food_item_id" value="{{ item.pk }}">
-              <input type="number" name="quantity" value="1" min="1" max="99" class="w-16">
-              <button type="submit" class="btn{% if not store_is_open %} opacity-50 cursor-not-allowed{% endif %}" {% if not store_is_open %}disabled{% endif %}>Add</button>
-            </form>
-          {% else %}
-            <p class="text-xs text-red-500 mt-2">Out of stock</p>
-          {% endif %}
+    <div id="content-{{ cd.category.pk }}"
+         class="{% if not forloop.first and not item_search and not cd.is_expanded %}hidden{% endif %}">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for item in cd.items %}
+          <div class="card flex flex-col">
+            {% if item.image %}
+              <img src="{{ item.image.url }}" alt="{{ item.name }}" class="w-full h-32 object-cover rounded mb-2">
+            {% endif %}
+            <h3 class="font-semibold">{{ item.name }}</h3>
+            {% if item.item_code %}
+              <p class="text-xs text-gray-400 font-mono">Code: {{ item.item_code }}</p>
+            {% endif %}
+            <p class="text-sm text-gray-500 flex-1">{{ item.description }}</p>
+            <p class="font-bold mt-1">{% currency store item.price %}</p>
+            {% if item.in_stock %}
+              <form method="post" action="{% url 'orders:add_to_cart' store.slug %}" class="mt-3"
+                    onsubmit="return addToCart(event, this);">
+                {% csrf_token %}
+                <input type="hidden" name="food_item_id" value="{{ item.pk }}">
+                <input type="hidden" name="quantity" value="1" id="qty-{{ item.pk }}">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <div class="flex items-center border border-gray-300 rounded-lg overflow-hidden flex-1 sm:flex-none">
+                    <button type="button" onclick="adjustQty({{ item.pk }}, -1)"
+                            class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition font-bold text-gray-600 text-lg leading-none touch-manipulation">−</button>
+                    <span class="flex-1 px-2 py-2.5 font-medium text-center min-w-[2.5rem] border-x border-gray-200" id="qty-display-{{ item.pk }}">1</span>
+                    <button type="button" onclick="adjustQty({{ item.pk }}, 1)"
+                            class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition font-bold text-gray-600 text-lg leading-none touch-manipulation">+</button>
+                  </div>
+                  <button type="submit" class="btn w-full sm:w-auto sm:flex-1{% if not store_is_open %} opacity-50 cursor-not-allowed{% endif %}"
+                          {% if not store_is_open %}disabled{% endif %}>
+                    Add to Cart
+                  </button>
+                </div>
+              </form>
+            {% else %}
+              <p class="text-xs text-red-500 mt-2">Out of stock</p>
+            {% endif %}
+          </div>
+        {% empty %}
+          <p class="text-gray-400 text-sm col-span-full">No items match your search in this category.</p>
+        {% endfor %}
+      </div>
+
+      {% if cd.hidden_count > 0 and not item_search %}
+        <div class="mt-3 text-center">
+          <a href="?expand={{ cd.category.name }}#cat-{{ cd.category.pk }}"
+             class="inline-block text-sm font-medium text-orange-600 hover:text-orange-800 hover:underline">
+            +{{ cd.hidden_count }} more in {{ cd.category.name }} — See all &raquo;
+          </a>
         </div>
-      {% empty %}
-        <p class="text-gray-400 text-sm col-span-full">No items match your search in this category.</p>
-      {% endfor %}
+      {% endif %}
+
+      {% if cd.is_expanded and not item_search and cd.total_count > 3 %}
+        <div class="mt-3 text-center">
+          <a href="{% url 'stores:store_detail' store.slug %}#cat-{{ cd.category.pk }}"
+             class="inline-block text-sm font-medium text-gray-500 hover:text-gray-700 hover:underline">
+            &laquo; Show less
+          </a>
+        </div>
+      {% endif %}
     </div>
-
-    <!-- "See all" link — only shown when items were truncated and not searching -->
-    {% if cd.hidden_count > 0 and not item_search %}
-      <div class="mt-3 text-center">
-        <a href="?expand={{ cd.category.name }}{% if item_search %}&item_q={{ item_search }}{% endif %}#cat-{{ cd.category.pk }}"
-           class="inline-block text-sm font-medium text-orange-600 hover:text-orange-800 hover:underline">
-          +{{ cd.hidden_count }} more in {{ cd.category.name }} — See all &raquo;
-        </a>
-      </div>
-    {% endif %}
-
-    <!-- "Show less" link — only when expanded and not searching -->
-    {% if cd.is_expanded and not item_search and cd.total_count > 4 %}
-      <div class="mt-3 text-center">
-        <a href="{% url 'stores:store_detail' store.slug %}#cat-{{ cd.category.pk }}"
-           class="inline-block text-sm font-medium text-gray-500 hover:text-gray-700 hover:underline">
-          &laquo; Show less
-        </a>
-      </div>
-    {% endif %}
   </div>
 {% empty %}
   <p class="text-gray-500">
@@ -127,9 +163,120 @@
   </p>
 {% endfor %}
 
-<div class="mt-8 text-center">
-  <a href="{% url 'orders:checkout' store.slug %}" class="btn">
-    Go to Checkout{% if cart_item_count %} ({{ cart_item_count }} item{{ cart_item_count|pluralize }}){% endif %}
-  </a>
+<!-- Spacer so content doesn't hide behind sticky bar -->
+<div class="h-20"></div>
+
+<!-- ===== STICKY CHECKOUT BAR ===== -->
+<div class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-40 px-4 py-3">
+  <div class="max-w-6xl mx-auto flex items-center justify-between gap-4">
+    <div class="text-sm text-gray-600">
+      <span id="sticky-cart-count">{% if cart_item_count %}{{ cart_item_count }} item{{ cart_item_count|pluralize }} in cart{% else %}Cart is empty{% endif %}</span>
+    </div>
+    <a href="{% url 'orders:checkout' store.slug %}" class="btn whitespace-nowrap" id="checkout-link">
+      Go to Checkout{% if cart_item_count %} ({{ cart_item_count }}){% endif %}
+    </a>
+  </div>
 </div>
+
+<!-- Toast notification for cart updates -->
+<div id="cart-toast" class="hidden fixed bottom-20 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 text-sm transition-opacity duration-300">
+  Added to cart!
+</div>
+
+<script>
+// =====Share Store =====
+function shareStore() {
+    var shareUrl = window.location.href;
+    var shareData = {
+        title: '{{ store.name|escapejs }}',
+        text: 'Check out {{ store.name|escapejs }} on YourTrolley!',
+        url: shareUrl,
+    };
+
+    if (navigator.share) {
+        navigator.share(shareData).catch(function() {});
+    } else {
+        navigator.clipboard.writeText(shareUrl).then(function() {
+            alert('Store link copied to clipboard!');
+        });
+    }
+}
+
+// ===== Collapsible Categories =====
+function toggleCategory(catPk) {
+    var content = document.getElementById('content-' + catPk);
+    var arrow = document.getElementById('arrow-' + catPk);
+    content.classList.toggle('hidden');
+    arrow.classList.toggle('rotate-180');
+}
+
+// ===== Quantity Stepper =====
+function adjustQty(itemPk, delta) {
+    var hiddenInput = document.getElementById('qty-' + itemPk);
+    var display = document.getElementById('qty-display-' + itemPk);
+    var current = parseInt(hiddenInput.value) || 1;
+    var newVal = Math.max(1, Math.min(99, current + delta));
+    hiddenInput.value = newVal;
+    display.textContent = newVal;
+}
+
+// ===== AJAX Add to Cart =====
+function addToCart(event, form) {
+    event.preventDefault();
+
+    var formData= new FormData(form);
+    var btn = form.querySelector('button[type="submit"]');
+    var originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Adding...';
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    })
+    .then(function(response) {
+        if (!response.ok) {
+            return response.json().then(function(data) {
+                throw new Error(data.error || 'Could not add item.');
+            });
+        }
+        return response.json();
+    })
+    .then(function(data) {
+        if (data.success) {
+            var toast = document.getElementById('cart-toast');
+            toast.textContent = '✓ ' + data.item_name + ' added to cart!';
+            toast.classList.remove('hidden');
+            setTimeout(function() { toast.classList.add('hidden'); }, 2000);
+
+            var count = data.cart_count;
+            var checkoutLink = document.getElementById('checkout-link');
+            if (checkoutLink) {
+                checkoutLink.textContent = 'Go to Checkout (' + count + ')';
+            }
+            var stickyCount = document.getElementById('sticky-cart-count');
+            if (stickyCount) {
+                stickyCount.textContent = count + ' item' + (count > 1 ? 's' : '') + ' in cart';
+            }
+        } else {
+            alert(data.error || 'Could not add item. Please try again.');
+        }
+    })
+    .catch(function(err) {
+        console.error('Add to cart error:', err);
+        alert('Could not add item: ' + (err.message || 'Network error. Please refresh and try again.'));
+    })
+    .finally(function() {
+        btn.disabled = false;
+        btn.textContent = originalText;
+    });
+
+    return false;
+}
+</script>
+
 {% endblock %}

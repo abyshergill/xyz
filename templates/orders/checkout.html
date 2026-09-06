@@ -52,8 +52,29 @@
   </div>
 
 <form method="post" class="card max-w-md">
-  {% csrf_token %}
-  {% for field in form %}
+    {% csrf_token %}
+
+    <!-- Saved addresses for logged-in customers -->
+    {% if saved_addresses %}
+    <div class="mb-4 pb-3 border-b">
+        <label class="block text-sm font-medium mb-1">Select a saved address</label>
+        <select id="saved-address-select" class="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none"
+                onchange="fillAddress(this.value)">
+            <option value="">-- Enter manually --</option>
+            {% for addr in saved_addresses %}
+            <option value="{{ addr.pk }}"
+                    data-name="{{ addr.full_name|default:'' }}"
+                    data-address="{{ addr.address }}"
+                    data-pincode="{{ addr.pincode }}"
+                    data-phone="{{ addr.phone_number|default:'' }}">
+                {{ addr.get_alias_display }} — {{ addr.address }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    {% endif %}
+
+    {% for field in form %}
     {% if field.is_hidden %}
       {{ field }}
     {% else %}
@@ -66,4 +87,20 @@
   {% endfor %}
   <button type="submit" class="btn w-full">Place Order</button>
 </form>
+<script>
+function fillAddress(addrPk) {
+    if (!addrPk) return;
+    const select = document.getElementById('saved-address-select');
+    const option = select.options[select.selectedIndex];
+
+    // Fill form fields
+    const nameField = document.querySelector('input[name="customer_name"]');
+    const addressField = document.querySelector('input[name="customer_address"]');
+    const phoneField = document.querySelector('input[name="contact_phone"]');
+
+    if (nameField && option.dataset.name) nameField.value = option.dataset.name;
+    if (addressField) addressField.value = option.dataset.address || '';
+    if (phoneField && option.dataset.phone) phoneField.value = option.dataset.phone;
+}
+</script>
 {% endblock %}

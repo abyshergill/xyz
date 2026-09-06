@@ -2,34 +2,118 @@
 {% load currency_tags %}
 {% block title %}Menu Items{% endblock %}
 {% block content %}
-<div class="flex justify-between items-center mb-4">
+
+<div class="flex justify-between items-center mb-4 flex-wrap gap-2">
   <h1 class="text-xl font-bold">Menu Items &mdash; {{ store.name }}</h1>
   <a href="{% url 'stores:item_create' store.slug %}" class="btn">+ Add Item</a>
 </div>
+
+<!-- ===== FILTER FORM ===== -->
+<form method="get" class="card mb-4">
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <div>
+      <label class="block text-xs font-medium mb-1">Search by Item Name</label>
+      <input type="text" name="item_q" value="{{ item_search }}"
+             placeholder="Item name..."
+             class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-500">
+    </div>
+    <div>
+      <label class="block text-xs font-medium mb-1">Search by Code</label>
+      <input type="text" name="code_q" value="{{ code_search }}"
+             placeholder="Item code..."
+             class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-500">
+    </div>
+    <div>
+      <label class="block text-xs font-medium mb-1">Filter by Category</label>
+      <select name="category" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-500">
+        <option value="">All categories</option>
+        {% for cat in all_categories %}
+          <option value="{{ cat.name }}" {% if cat.name == category_filter %}selected{% endif %}>{{ cat.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="mt-3 flex gap-2">
+    <button type="submit" class="btn">Apply Filters</button>
+    {% if item_search or category_filter or code_search %}
+      <a href="{% url 'stores:item_list' store.slug %}" class="btn btn-secondary">Clear</a>
+    {% endif %}
+  </div>
+</form>
+
+<!-- ===== ITEMS TABLE ===== -->
 <div class="card overflow-x-auto">
-<table class="w-full text-sm">
-  <thead><tr class="text-left border-b">
-    <th class="py-2">Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Available</th><th></th>
-  </tr></thead>
-  <tbody>
-  {% for item in items %}
-    <tr class="border-b">
-      <td class="py-2">{{ item.name }}</td>
-      <td>{{ item.category.name|default:"—" }}</td>
-      <td>{% currency store item.price %}</td>
-      <td>{{ item.stock_quantity }}</td>
-      <td>{% if item.is_available %}Yes{% else %}No{% endif %}</td>
-      <td class="flex gap-2 py-2">
-        <a href="{% url 'stores:item_edit' store.slug item.pk %}" class="text-orange-600 underline">Edit</a>
-        <form method="post" action="{% url 'stores:item_delete' store.slug item.pk %}" onsubmit="return confirm('Delete this item?');">
-          {% csrf_token %}<button type="submit" class="text-red-600 underline">Delete</button>
-        </form>
-      </td>
-    </tr>
-  {% empty %}
-    <tr><td colspan="6" class="py-2 text-gray-500">No items yet.</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left border-b">
+        <th class="py-2">Code</th>
+        <th>Name</th>
+        <th>Category</th>
+        <th>Price</th>
+        <th>Tax %</th>
+        <th>Stock</th>
+        <th>Min Stock</th>
+        <th>Available</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in page_obj %}
+      <tr class="border-b {% if item.is_low_stock %}bg-red-50{% endif %}">
+        <td class="py-2 font-mono text-xs">{{ item.item_code|default:"—" }}</td>
+        <td>{{ item.name }}</td>
+        <td>{{ item.category.name|default:"—" }}</td>
+        <td>{% currency store item.price %}</td>
+        <td>{% if item.tax_percentage > 0 %}{{ item.tax_percentage }}%{% else %}—{% endif %}</td>
+        <td>
+          {{ item.stock_quantity }}
+          {% if item.is_low_stock %}
+            <span class="text-red-600 text-xs font-medium">⚠ Low</span>
+          {% endif %}
+        </td>
+        <td class="text-gray-500">{{ item.min_stock_quantity }}</td>
+        <td>
+          <span class="px-2 py-0.5 rounded-full text-xs {% if item.is_available %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+            {% if item.is_available %}Yes{% else %}No{% endif %}
+          </span>
+        </td>
+        <td class="whitespace-nowrap">
+          <a href="{% url 'stores:item_edit' store.slug item.pk %}" class="text-blue-600 hover:underline text-xs">Edit</a>
+          <span class="text-gray-300">|</span>
+          <form method="post" action="{% url 'stores:item_delete' store.slug item.pk %}" class="inline"
+                onsubmit="return confirm('Delete this item?');">
+            {% csrf_token %}
+            <button type="submit" class="text-red-600 hover:underline text-xs">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="9" class="py-4 text-gray-500 text-center">
+          No items found.
+          {% if item_search or category_filter or code_search %}
+            <a href="{% url 'stores:item_list' store.slug %}" class="text-orange-600 hover:underline">Clear filters</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
+
+<!-- ===== PAGINATION ===== -->
+{% if page_obj.has_other_pages %}
+<div class="mt-4 flex items-center justify-center gap-2">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if filter_query_string %}&{{ filter_query_string }}{% endif %}"
+       class="btn btn-secondary text-sm">← Prev</a>
+  {% endif %}
+  <span class="text-sm text-gray-500">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if filter_query_string %}&{{ filter_query_string }}{% endif %}"
+       class="btn btn-secondary text-sm">Next →</a>
+  {% endif %}
+</div>
+{% endif %}
+
 {% endblock %}

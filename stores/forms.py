@@ -7,13 +7,15 @@ class StoreForm(forms.ModelForm):
     class Meta:
         model = Store
         fields = [
-            "name", "store_category", "pincode", "description", "store_picture", 
-            "address", "phone_number", "currency_code", "custom_currency_symbol", 
-            "custom_currency_icon", "require_table_number", "require_phone_number", 
-            "require_email", "require_customer_name", "require_customer_address",
+            "name", "store_category", "pincode", "description", "store_picture",
+            "address", "phone_number", "timezone", "accept_orders_when_closed",
+            "currency_code", "custom_currency_symbol", "custom_currency_icon",
+            "require_table_number", "require_phone_number", "require_email",
+            "require_customer_name", "require_customer_address",
         ]
         widgets = {
             "description": forms.Textarea(attrs={"rows": 4}),
+            "timezone": forms.Select(choices=Store.TIMEZONE_CHOICES),
             "pincode": forms.TextInput(
                 attrs={
                     "placeholder": "e.g. 201301",
@@ -25,7 +27,10 @@ class StoreForm(forms.ModelForm):
             "currency_code": "Prices across your store will be shown with this symbol.",
             "pincode": "Required. Customers can search for your store by pincode.",
             "store_category": "Choose the type of store you are running.",
+            "timezone": "Select your country so operating hours match your local time.",
+            "accept_orders_when_closed": "Enable to accept orders even when your store is closed.",
         }
+
 
 
 class OperatingHoursForm(forms.ModelForm):
@@ -62,8 +67,16 @@ class CategoryForm(forms.ModelForm):
 class FoodItemForm(forms.ModelForm):
     class Meta:
         model = FoodItem
-        fields = ["category", "name", "description", "price", "tax_percentage", "stock_quantity", "image", "is_available"]
-        widgets = {"description": forms.Textarea(attrs={"rows": 3})}
+        fields = ["category", "name", "item_code", "description", "price", "stock_quantity", "min_stock_quantity", "image", "is_available"]
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 3}),
+            "item_code": forms.TextInput(attrs={"placeholder": "Auto-generated if left blank"}),
+            "min_stock_quantity": forms.NumberInput(attrs={"min": 0, "default": 10}),
+        }
+        help_texts = {
+            "min_stock_quantity": "You will get an alert when stock falls below this number.",
+            "item_code": "Unique code for this item. Leave blank to auto-generate.",
+        }
 
     def __init__(self, *args, store=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -71,7 +84,6 @@ class FoodItemForm(forms.ModelForm):
             self.fields["category"].queryset = Category.objects.filter(
                 store=store
             )
-
 
 class ContactForm(forms.Form):
     name = forms.CharField(

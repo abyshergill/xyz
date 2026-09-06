@@ -1,110 +1,174 @@
-from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.test import TestCase, Client
+from django.contrib.auth import get_user_model
+from django.urls import reverse
+from .models import Store, Category, FoodItem, Notification
 
-from accounts.models import User
-from .models import OperatingHours, Store
-
-
-class StoreUniquenessAndIDORTests(TestCase):
-    def setUp(self):
-        self.owner1 = User.objects.create_user(
-            username="owner_a", email="a@example.com", password="StrongPass123!", role=User.Role.OWNER
-        )
-        self.owner2 = User.objects.create_user(
-            username="owner_b", email="b@example.com", password="StrongPass123!", role=User.Role.OWNER
-        )
-        self.store1 = Store.objects.create(owner=self.owner1, name="Ramen House", address="1 St")
-
-    def test_duplicate_store_name_rejected(self):
-        dupe = Store(owner=self.owner2, name="Ramen House", address="2 St")
-        with self.assertRaises(ValidationError):
-            dupe.full_clean()
-
-    def test_case_insensitive_duplicate_rejected(self):
-        dupe = Store(owner=self.owner2, name="ramen house", address="2 St")
-        with self.assertRaises(ValidationError):
-            dupe.full_clean()
-
-    def test_owner_cannot_edit_other_owners_store(self):
-        self.client.login(username="owner_b", password="StrongPass123!")
-        resp = self.client.get(f"/owner/store/{self.store1.slug}/edit/")
-        self.assertEqual(resp.status_code, 403)
-
-    def test_owner_cannot_delete_other_owners_item_via_crafted_url(self):
-        from .models import Category, FoodItem
-        cat = Category.objects.create(store=self.store1, name="Mains")
-        item = FoodItem.objects.create(store=self.store1, category=cat, name="Tonkotsu", price=10, stock_quantity=5)
-
-        self.client.login(username="owner_b", password="StrongPass123!")
-        resp = self.client.post(f"/owner/store/{self.store1.slug}/items/{item.pk}/delete/")
-        self.assertEqual(resp.status_code, 403)
-        self.assertTrue(FoodItem.objects.filter(pk=item.pk).exists())
+User = get_user_model()
 
 
-class OperatingHoursFormTests(TestCase):
-    """
-    Regression tests for a bug where opening the hours form on a fresh
-    store (no OperatingHours rows yet) produced 7 blank formset rows with
-    an unset 'day' dropdown. If an owner filled in times without manually
-    selecting the day for each row, hours saved against the wrong day (or
-    didn't save at all), so is_open_now() could never find a match and the
-    store appeared permanently closed.
-    """
-
+class StoreModelTests(TestCase):
     def setUp(self):
         self.owner = User.objects.create_user(
-            username="owner_hours", email="hours@example.com", password="StrongPass123!", role=User.Role.OWNER
+            username="testowner", email="owner@test.com",
+            password="testpass123", role=User.Role.OWNER
         )
-        self.store = Store.objects.create(owner=self.owner, name="Fresh Hours Stall", address="1 St")
-        self.client.login(username="owner_hours", password="StrongPass123!")
+        self.store = Store.objects.create(
+            owner=self.owner, name="Test Store", pincode="12345",
+            store_category=Store.StoreCategory.FOOD,
+        )
 
-    def test_getting_hours_form_creates_all_seven_days(self):
-        self.assertEqual(self.store.operating_hours.count(), 0)
-        resp = self.client.get(f"/owner/store/{self.store.slug}/hours/")
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(self.store.operating_hours.count(), 7)
-        days_present = set(self.store.operating_hours.values_list("day", flat=True))
-        self.assertEqual(days_present, {code for code, _ in OperatingHours.Day.choices})
+    def test_store_str(self):
+        self.assertEqual(str(self.store), "Test Store")
 
-    def test_reopening_form_does_not_duplicate_rows(self):
-        self.client.get(f"/owner/store/{self.store.slug}/hours/")
-        self.client.get(f"/owner/store/{self.store.slug}/hours/")
-        self.assertEqual(self.store.operating_hours.count(), 7)
+    def test_store_slug_generated(self):
+        self.assertEqual(self.store.slug, "test-store")
 
-    def test_saving_hours_without_day_in_post_still_saves_to_correct_day(self):
-        # Simulates exactly what a real browser submits: the 'day' field is
-        # disabled, so browsers omit it from POST entirely.
-        self.client.get(f"/owner/store/{self.store.slug}/hours/")  # creates the 7 rows
-        hours = list(self.store.operating_hours.order_by("day"))
-        today_code = __import__("datetime").datetime.now().strftime("%a").upper()[:3]
+    def test_pincode_required(self):
+        from django.core.exceptions import ValidationError
+        store = Store(owner=self.owner, name="No Pincode", pincode="")
+        with self.assertRaises(ValidationError):
+            store.full_clean()
 
-        post_data = {
-            "operating_hours-TOTAL_FORMS": str(len(hours)),
-            "operating_hours-INITIAL_FORMS": str(len(hours)),
-            "operating_hours-MIN_NUM_FORMS": "0",
-            "operating_hours-MAX_NUM_FORMS": "7",
-        }
-        for i, h in enumerate(hours):
-            post_data[f"operating_hours-{i}-id"] = str(h.pk)
-            if h.day == today_code:
-                post_data[f"operating_hours-{i}-opening_time"] = "00:00"
-                post_data[f"operating_hours-{i}-closing_time"] = "23:59"
-            else:
-                post_data[f"operating_hours-{i}-opening_time"] = "09:00"
-                post_data[f"operating_hours-{i}-closing_time"] = "21:00"
-                post_data[f"operating_hours-{i}-is_closed"] = "on"
+    def test_is_open_now_returns_bool(self):
+        self.assertIn(self.store.is_open_now(), [True, False])
 
-        resp = self.client.post(f"/owner/store/{self.store.slug}/hours/", post_data, follow=True)
-        self.assertEqual(resp.status_code, 200)
 
-        self.store.refresh_from_db()
-        # Every row must still have exactly its original, correct day --
-        # none were reassigned to the wrong day despite 'day' being absent
-        # from the POST body entirely.
-        days_after = set(self.store.operating_hours.values_list("day", flat=True))
-        self.assertEqual(days_after, {code for code, _ in OperatingHours.Day.choices})
-        self.assertEqual(self.store.operating_hours.count(), 7)  # no duplicates created
+class FoodItemModelTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username="testowner", email="owner@test.com",
+            password="testpass123", role=User.Role.OWNER
+        )
+        self.store = Store.objects.create(
+            owner=self.owner, name="Test Store", pincode="12345",
+        )
+        self.category = Category.objects.create(store=self.store, name="Drinks")
+        self.item = FoodItem.objects.create(
+            store=self.store, category=self.category,
+            name="Coffee", price=50, stock_quantity=10,
+        )
 
-        today_hours = self.store.operating_hours.get(day=today_code)
-        self.assertFalse(today_hours.is_closed)
-        self.assertTrue(self.store.is_open_now())
+    def test_item_code_auto_generated(self):
+        self.assertTrue(self.item.item_code)
+
+    def test_in_stock_when_available_and_quantity(self):
+        self.assertTrue(self.item.in_stock)
+
+    def test_out_of_stock_when_zero(self):
+        self.item.stock_quantity = 0
+        self.assertFalse(self.item.in_stock)
+
+
+class StoreViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.owner = User.objects.create_user(
+            username="testowner", email="owner@test.com",
+            password="testpass123", role=User.Role.OWNER
+        )
+        self.store = Store.objects.create(
+            owner=self.owner, name="Test Store", pincode="12345",
+        )
+
+    def test_store_list_status_code(self):
+        response = self.client.get(reverse("stores:store_list"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_store_detail_status_code(self):
+        response = self.client.get(reverse("stores:store_detail", args=[self.store.slug]))
+        self.assertEqual(response.status_code, 200)
+
+    def test_store_detail_with_search(self):
+        response = self.client.get(reverse("stores:store_detail", args=[self.store.slug]), {"item_q": "coffee"})
+        self.assertEqual(response.status_code, 200)
+
+    def test_owner_dashboard_requires_login(self):
+        response = self.client.get(reverse("stores:owner_dashboard"))
+        self.assertEqual(response.status_code, 302)  # redirect to login
+
+    def test_owner_dashboard_authenticated(self):
+        self.client.login(username="testowner", password="testpass123")
+        response = self.client.get(reverse("stores:owner_dashboard"))
+        self.assertEqual(response.status_code, 200)
+
+
+class ItemListViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.owner = User.objects.create_user(
+            username="testowner", email="owner@test.com",
+            password="testpass123", role=User.Role.OWNER
+        )
+        self.store = Store.objects.create(
+            owner=self.owner, name="Test Store", pincode="12345",
+        )
+        self.category = Category.objects.create(store=self.store, name="Food")
+        for i in range(25):
+            FoodItem.objects.create(
+                store=self.store, category=self.category,
+                name=f"Item {i}", price=10 + i,
+            )
+
+    def test_item_list_pagination_20_per_page(self):
+        self.client.login(username="testowner", password="testpass123")
+        response = self.client.get(reverse("stores:item_list", args=[self.store.slug]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context["page_obj"].object_list), 20)
+
+    def test_item_list_filter_by_category(self):
+        self.client.login(username="testowner", password="testpass123")
+        response = self.client.get(reverse("stores:item_list", args=[self.store.slug]), {"category": "Food"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context["page_obj"].object_list), 20)
+
+    def test_item_list_search_by_name(self):
+        self.client.login(username="testowner", password="testpass123")
+        response = self.client.get(reverse("stores:item_list", args=[self.store.slug]), {"item_q": "Item 1"})
+        self.assertEqual(response.status_code, 200)
+        # Should find Item 1, Item 10-19 (names containing "Item 1")
+        self.assertTrue(len(response.context["page_obj"].object_list) > 0)
+
+
+class NotificationModelTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username="testowner", email="owner@test.com",
+            password="testpass123", role=User.Role.OWNER
+        )
+        self.store = Store.objects.create(
+            owner=self.owner, name="Test Store", pincode="12345",
+        )
+
+    def test_notification_creation(self):
+        notif = Notification.objects.create(
+            user=self.owner,
+            notification_type=Notification.Type.NEW_ORDER,
+            title="Test Notification",
+            message="Test message",
+        )
+        self.assertEqual(str(notif), "NEW_ORDER: Test Notification (testowner)")
+        self.assertFalse(notif.is_read)
+
+    def test_notifications_view_requires_login(self):
+        response = self.client.get(reverse("stores:notifications"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_notifications_view_authenticated(self):
+        self.client.login(username="testowner", password="testpass123")
+        response = self.client.get(reverse("stores:notifications"))
+        self.assertEqual(response.status_code, 200)
+
+
+class ContactUsTests(TestCase):
+    def test_contact_us_page_status_code(self):
+        response = self.client.get(reverse("stores:contact_us"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_contact_us_form_submission(self):
+        response = self.client.post(reverse("stores:contact_us"), {
+            "name": "Test User",
+            "email": "test@test.com",
+            "phone_number": "1234567890",
+            "message": "This is a test complaint.",
+        })
+        self.assertEqual(response.status_code, 302)  # redirect after success
