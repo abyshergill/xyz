@@ -1,8 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Edit Category{% endblock %}
+{% load i18n %}
+
+{% block title %}{% trans "Edit Category" %}{% endblock %}
+
 {% block content %}
 <div class="max-w-md mx-auto card">
-    <h1 class="text-xl font-bold mb-4">Edit Category</h1>
+    <h1 class="text-xl font-bold mb-4">{% trans "Edit Category" %}</h1>
     <form method="post" novalidate>
         {% csrf_token %}
         {% for field in form %}
@@ -13,8 +16,8 @@
         </div>
         {% endfor %}
         <div class="flex gap-2">
-            <button type="submit" class="btn">Save Changes</button>
-            <a href="{% url 'stores:category_list' store.slug %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn">{% trans "Save Changes" %}</button>
+            <a href="{% url 'stores:category_list' store.slug %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
         </div>
     </form>
 </div>

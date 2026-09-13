@@ -1,17 +1,20 @@
 {% extends "base.html" %}
-{% block title %}Operating Hours{% endblock %}
+{% load i18n %}
+
+{% block title %}{% trans "Operating Hours" %}{% endblock %}
 {% block content %}
 <div class="max-w-2xl mx-auto card px-4 sm:px-6">
-  <h1 class="text-xl font-bold mb-4">Operating Hours &mdash; {{ store.name }}</h1>
+  <h1 class="text-xl font-bold mb-4">{% trans "Operating Hours" %} &mdash; {{ store.name }}</h1>
   <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-sm text-blue-800">
-    <p class="font-semibold mb-1">Timezone: {{ store.timezone }}</p>
-    <p>Your store's open/closed status updates automatically based on these hours.
-    To change your timezone, go to <a href="{% url 'stores:edit_store' slug=store.slug %}" class="underline">Edit Store</a>.</p>
+    <p class="font-semibold mb-1">{% trans "Timezone:" %} {{ store.timezone }}</p>
+    {% url 'stores:edit_store' slug=store.slug as edit_store_url %}
+    <p>{% blocktrans %}Your store's open/closed status updates automatically based on these hours.
+    To change your timezone, go to <a href="{{ edit_store_url }}" class="underline">Edit Store</a>.{% endblocktrans %}</p>
   </div>
   <form method="post" novalidate>
     {% csrf_token %}
     {{ formset.management_form }}
-    <p class="text-sm text-gray-500 mb-4">Set your opening and closing time for each day, or check "Closed all day" for days you don't operate.</p>
+    <p class="text-sm text-gray-500 mb-4">{% trans "Set your opening and closing time for each day, or check 'Closed all day' for days you don't operate." %}</p>
     
     <div class="space-y-4">
       {% for hform in formset %}
@@ -25,27 +28,27 @@
           
           <!-- Opening Time -->
           <div>
-            <label class="block text-xs text-gray-600 sm:hidden mb-1">Opens</label>
+            <label class="block text-xs text-gray-600 sm:hidden mb-1">{% trans "Opens" %}</label>
             {{ hform.opening_time }}
           </div>
           
           <!-- Closing Time -->
           <div>
-            <label class="block text-xs text-gray-600 sm:hidden mb-1">Closes</label>
+            <label class="block text-xs text-gray-600 sm:hidden mb-1">{% trans "Closes" %}</label>
             {{ hform.closing_time }}
           </div>
           
           <!-- Closed Checkbox -->
           <div class="flex items-center gap-2 pt-1 sm:pt-0">
             {{ hform.is_closed }}
-            <label class="text-xs sm:text-sm text-gray-700">Closed all day</label>
+            <label class="text-xs sm:text-sm text-gray-700">{% trans "Closed all day" %}</label>
           </div>
         </div>
         {% for error in hform.non_field_errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
       {% endfor %}
     </div>
     
-    <button type="submit" class="btn mt-6 w-full">Save Hours</button>
+    <button type="submit" class="btn mt-6 w-full">{% trans "Save Hours" %}</button>
   </form>
 </div>
 {% endblock %}

@@ -1,36 +1,36 @@
 {% extends "base.html" %}
-{% load currency_tags %}
-{% block title %}{{ store.name }}{% endblock %}
+{% load currency_tags i18n %}
+{% block title %}{{ store.localized_name }}{% endblock %}
 {% block content %}
 
 <div class="card mb-6 flex flex-col sm:flex-row gap-4">
   {% if store.store_picture %}
-    <img src="{{ store.store_picture.url }}" alt="{{ store.name }}" class="w-full sm:w-48 h-40 object-cover rounded">
+    <img src="{{ store.store_picture.url }}" alt="{{ store.localized_name }}" class="w-full sm:w-48 h-40 object-cover rounded">
   {% endif %}
   <div class="flex-1">
-    <h1 class="text-2xl font-bold">{{ store.name }}</h1>
+    <h1 class="text-2xl font-bold">{{ store.localized_name }}</h1>
     <span class="inline-block bg-blue-100 text-blue-800 text-xs rounded-full px-2 py-0.5 mt-1 mb-2">
       {{ store.get_store_category_display }}
     </span>
-    <p class="text-gray-600">{{ store.description }}</p>
-    <p class="text-sm text-gray-500 mt-1">{{ store.address }} &middot; {{ store.phone_number }}</p>
-    <p class="text-sm text-gray-500 mt-0.5">Pincode: {{ store.pincode }}</p>
+    <p class="text-gray-600">{{ store.localized_description }}</p>
+    <p class="text-sm text-gray-500 mt-1">{{ store.localized_address }} &middot; {{ store.phone_number }}</p>
+    <p class="text-sm text-gray-500 mt-0.5">{% trans "Pincode:" %} {{ store.pincode }}</p>
     <p class="mt-2 text-sm font-medium {% if store_is_open %}text-green-600{% else %}text-red-500{% endif %}">
-      {% if store_is_open %} Open now{% else %} Closed{% endif %}
+      {% if store_is_open %} {% trans "Open now" %}{% else %} {% trans "Closed" %}{% endif %}
     </p>
   </div>
   {% if store.qr_code %}
     <div class="text-center">
-      <img src="{{ store.qr_code.url }}" alt="QR code" class="w-24 h-24 mx-auto rounded-lg" id="qr-image">
-      <p class="text-xs text-gray-400 mt-1">Scan to reorder</p>
+      <img src="{{ store.qr_code.url }}" alt="{% trans 'QR code' %}" class="w-24 h-24 mx-auto rounded-lg" id="qr-image">
+      <p class="text-xs text-gray-400 mt-1">{% trans "Scan to reorder" %}</p>
       <div class="mt-2 flex flex-col gap-1.5 items-center">
         <button type="button" onclick="shareStore()"
                 class="w-full text-xs px-3 py-1.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition flex items-center justify-center gap-1">
-          Share Store
+          {% trans "Share Store" %}
         </button>
         <a href="{{ store.qr_code.url }}" download="{{ store.slug }}-qr-code.png"
            class="w-full text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition flex items-center justify-center gap-1">
-          Download QR
+          {% trans "Download QR" %}
         </a>
       </div>
     </div>
@@ -39,19 +39,19 @@
 
 {% if not store_is_open %}
   <div class="bg-yellow-50 border border-yellow-300 text-yellow-800 rounded p-3 mb-4 text-sm">
-    This stall is currently closed. You can browse the menu but cannot place an order right now.
+    {% trans "This stall is currently closed. You can browse the menu but cannot place an order right now." %}
   </div>
 {% endif %}
 
 <!-- ===== ITEM SEARCH BAR ===== -->
 <form method="get" class="mb-6 flex flex-col sm:flex-row gap-2">
   <input type="text" name="item_q" value="{{ item_search }}"
-         placeholder="Search items in this store..."
+         placeholder="{% trans 'Search items in this store...' %}"
          class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-base">
   <div class="flex gap-2">
-    <button type="submit" class="btn flex-1 sm:flex-none">Search</button>
+    <button type="submit" class="btn flex-1 sm:flex-none">{% trans "Search" %}</button>
     {% if item_search %}
-      <a href="{% url 'stores:store_detail' store.slug %}" class="btn btn-secondary flex-1 sm:flex-none">Clear</a>
+      <a href="{% url 'stores:store_detail' store.slug %}" class="btn btn-secondary flex-1 sm:flex-none">{% trans "Clear" %}</a>
     {% endif %}
   </div>
 </form>
@@ -83,7 +83,7 @@
             class="w-full flex justify-between items-center bg-white shadow-sm rounded-lg px-4 py-3 mb-2 hover:bg-gray-50 transition">
       <span class="text-lg font-semibold">
         {{ cd.category.name }}
-        <span class="text-sm text-gray-400 font-normal">({{ cd.total_count }} items)</span>
+        <span class="text-sm text-gray-400 font-normal">({{ cd.total_count }} {% trans "items" %})</span>
       </span>
       <svg id="arrow-{{ cd.category.pk }}" class="w-5 h-5 text-gray-400 transition-transform {% if forloop.first or item_search or cd.is_expanded %}rotate-180{% endif %}"
            fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -97,13 +97,13 @@
         {% for item in cd.items %}
           <div class="card flex flex-col">
             {% if item.image %}
-              <img src="{{ item.image.url }}" alt="{{ item.name }}" class="w-full h-32 object-cover rounded mb-2">
+              <img src="{{ item.image.url }}" alt="{{ item.localized_name }}" class="w-full h-32 object-cover rounded mb-2">
             {% endif %}
-            <h3 class="font-semibold">{{ item.name }}</h3>
+            <h3 class="font-semibold">{{ item.localized_name }}</h3>
             {% if item.item_code %}
-              <p class="text-xs text-gray-400 font-mono">Code: {{ item.item_code }}</p>
+              <p class="text-xs text-gray-400 font-mono">{% trans "Code:" %} {{ item.item_code }}</p>
             {% endif %}
-            <p class="text-sm text-gray-500 flex-1">{{ item.description }}</p>
+            <p class="text-sm text-gray-500 flex-1">{{ item.localized_description }}</p>
             <p class="font-bold mt-1">{% currency store item.price %}</p>
             {% if item.in_stock %}
               <form method="post" action="{% url 'orders:add_to_cart' store.slug %}" class="mt-3"
@@ -121,16 +121,16 @@
                   </div>
                   <button type="submit" class="btn w-full sm:w-auto sm:flex-1{% if not store_is_open %} opacity-50 cursor-not-allowed{% endif %}"
                           {% if not store_is_open %}disabled{% endif %}>
-                    Add to Cart
+                    {% trans "Add to Cart" %}
                   </button>
                 </div>
               </form>
             {% else %}
-              <p class="text-xs text-red-500 mt-2">Out of stock</p>
+              <p class="text-xs text-red-500 mt-2">{% trans "Out of stock" %}</p>
             {% endif %}
           </div>
         {% empty %}
-          <p class="text-gray-400 text-sm col-span-full">No items match your search in this category.</p>
+          <p class="text-gray-400 text-sm col-span-full">{% trans "No items match your search in this category." %}</p>
         {% endfor %}
       </div>
 
@@ -138,7 +138,9 @@
         <div class="mt-3 text-center">
           <a href="?expand={{ cd.category.name }}#cat-{{ cd.category.pk }}"
              class="inline-block text-sm font-medium text-orange-600 hover:text-orange-800 hover:underline">
-            +{{ cd.hidden_count }} more in {{ cd.category.name }} — See all &raquo;
+            {% blocktrans with hidden_count=cd.hidden_count cat_name=cd.category.name %}
+              +{{ hidden_count }} more in {{ cat_name }} — See all &raquo;
+            {% endblocktrans %}
           </a>
         </div>
       {% endif %}
@@ -147,7 +149,7 @@
         <div class="mt-3 text-center">
           <a href="{% url 'stores:store_detail' store.slug %}#cat-{{ cd.category.pk }}"
              class="inline-block text-sm font-medium text-gray-500 hover:text-gray-700 hover:underline">
-            &laquo; Show less
+            &laquo; {% trans "Show less" %}
           </a>
         </div>
       {% endif %}
@@ -156,9 +158,9 @@
 {% empty %}
   <p class="text-gray-500">
     {% if item_search %}
-      No items found matching "{{ item_search }}".
+      {% blocktrans with search=item_search %}No items found matching "{{ search }}".{% endblocktrans %}
     {% else %}
-      This store hasn't added any menu items yet.
+      {% trans "This store hasn't added any menu items yet." %}
     {% endif %}
   </p>
 {% endfor %}
@@ -170,17 +172,27 @@
 <div class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-40 px-4 py-3">
   <div class="max-w-6xl mx-auto flex items-center justify-between gap-4">
     <div class="text-sm text-gray-600">
-      <span id="sticky-cart-count">{% if cart_item_count %}{{ cart_item_count }} item{{ cart_item_count|pluralize }} in cart{% else %}Cart is empty{% endif %}</span>
+      <span id="sticky-cart-count">
+        {% if cart_item_count %}
+          {% blocktrans count counter=cart_item_count %}
+            {{ counter }} item in cart
+          {% plural %}
+            {{ counter }} items in cart
+          {% endblocktrans %}
+        {% else %}
+          {% trans "Cart is empty" %}
+        {% endif %}
+      </span>
     </div>
     <a href="{% url 'orders:checkout' store.slug %}" class="btn whitespace-nowrap" id="checkout-link">
-      Go to Checkout{% if cart_item_count %} ({{ cart_item_count }}){% endif %}
+      {% trans "Go to Checkout" %}{% if cart_item_count %} ({{ cart_item_count }}){% endif %}
     </a>
   </div>
 </div>
 
 <!-- Toast notification for cart updates -->
 <div id="cart-toast" class="hidden fixed bottom-20 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 text-sm transition-opacity duration-300">
-  Added to cart!
+  {% trans "Added to cart!" %}
 </div>
 
 <script>
@@ -189,7 +201,7 @@ function shareStore() {
     var shareUrl = window.location.href;
     var shareData = {
         title: '{{ store.name|escapejs }}',
-        text: 'Check out {{ store.name|escapejs }} on YourTrolley!',
+        text: '{% trans "Check out"|escapejs %} ' + '{{ store.name|escapejs }}' + ' {% trans "on YourTrolley!"|escapejs %}',
         url: shareUrl,
     };
 
@@ -197,7 +209,7 @@ function shareStore() {
         navigator.share(shareData).catch(function() {});
     } else {
         navigator.clipboard.writeText(shareUrl).then(function() {
-            alert('Store link copied to clipboard!');
+            alert('{% trans "Store link copied to clipboard!"|escapejs %}');
         });
     }
 }
@@ -228,7 +240,7 @@ function addToCart(event, form) {
     var btn = form.querySelector('button[type="submit"]');
     var originalText = btn.textContent;
     btn.disabled = true;
-    btn.textContent = 'Adding...';
+    btn.textContent = '{% trans "Adding..."|escapejs %}';
 
     fetch(form.action, {
         method: 'POST',
@@ -241,7 +253,7 @@ function addToCart(event, form) {
     .then(function(response) {
         if (!response.ok) {
             return response.json().then(function(data) {
-                throw new Error(data.error || 'Could not add item.');
+                throw new Error(data.error || '{% trans "Could not add item."|escapejs %}');
             });
         }
         return response.json();
@@ -249,26 +261,27 @@ function addToCart(event, form) {
     .then(function(data) {
         if (data.success) {
             var toast = document.getElementById('cart-toast');
-            toast.textContent = '✓ ' + data.item_name + ' added to cart!';
+            toast.textContent = '✓ ' + data.item_name + ' {% trans "added to cart!"|escapejs %}';
             toast.classList.remove('hidden');
             setTimeout(function() { toast.classList.add('hidden'); }, 2000);
 
             var count = data.cart_count;
             var checkoutLink = document.getElementById('checkout-link');
             if (checkoutLink) {
-                checkoutLink.textContent = 'Go to Checkout (' + count + ')';
+                checkoutLink.textContent = '{% trans "Go to Checkout"|escapejs %} (' + count + ')';
             }
             var stickyCount = document.getElementById('sticky-cart-count');
             if (stickyCount) {
-                stickyCount.textContent = count + ' item' + (count > 1 ? 's' : '') + ' in cart';
+                var itemText = count > 1 ? '{% trans "items"|escapejs %}' : '{% trans "item"|escapejs %}';
+                stickyCount.textContent = count + ' ' + itemText + ' {% trans "in cart"|escapejs %}';
             }
         } else {
-            alert(data.error || 'Could not add item. Please try again.');
+            alert(data.error || '{% trans "Could not add item. Please try again."|escapejs %}');
         }
     })
     .catch(function(err) {
         console.error('Add to cart error:', err);
-        alert('Could not add item: ' + (err.message || 'Network error. Please refresh and try again.'));
+        alert('{% trans "Could not add item:"|escapejs %} ' + (err.message || '{% trans "Network error. Please refresh and try again."|escapejs %}'));
     })
     .finally(function() {
         btn.disabled = false;

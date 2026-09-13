@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}Taliawale - {% trans "Your Local Stores, Online" %}{% endblock %}
+{% block content %}
+<section class="bg-orange-50 rounded-2xl overflow-hidden">
+  <div class="grid grid-cols-1 md:grid-cols-2 items-center gap-8 p-6 md:p-12">
+    <div>
+      <p class="text-orange-700 font-semibold uppercase tracking-wide text-sm mb-3">
+        {% trans "A simple way to shop and sell online" %}
+      </p>
+      <h1 class="text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-5">
+        {% trans "Bring your shop closer to your customers." %}
+      </h1>
+      <p class="text-lg text-gray-600 leading-relaxed mb-8">
+        {% blocktrans %}
+        Taliawale helps local shop owners show their products online and receive orders.
+        Customers can discover nearby stores, choose what they need, and order with ease.
+        {% endblocktrans %}
+      </p>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <a href="{% url 'accounts:register_owner' %}"
+           class="bg-orange-600 text-white font-semibold px-5 py-3 rounded-lg hover:bg-orange-700 transition text-center">
+          {% trans "Register Your Store" %}
+        </a>
+        <a href="{% url 'stores:contact_us' %}"
+           class="bg-white text-orange-700 font-semibold px-5 py-3 rounded-lg border border-orange-300 hover:bg-orange-100 transition text-center">
+          {% trans "Contact Us" %}
+        </a>
+        <a href="{% url 'stores:store_list' %}"
+           class="bg-gray-500 text-white font-semibold px-5 py-3 rounded-lg hover:bg-gray-300 transition text-center">
+          {% trans "Check Other Stores" %}
+        </a>
+      </div>
+    </div>
+    <div>
+      <img src="{% static 'images/landing-hero.png' %}"
+           alt="{% trans 'A shop owner showing products through an online store' %}"
+           class="w-full rounded-xl object-cover shadow-sm">
+    </div>
+  </div>
+</section>
+
+<section class="max-w-3xl mx-auto text-center py-12">
+  <h2 class="text-3xl font-bold text-gray-900 mb-5">{% trans "What is Taliawale?" %}</h2>
+  <p class="text-gray-600 text-lg leading-relaxed">
+    {% blocktrans %}
+    Taliawale is an online marketplace for local shops and their customers.
+    It gives store owners a simple place to present their shop, list their products,
+    manage orders, and connect with customers. For customers, it makes it easier to
+    find stores, browse products, place orders, and keep track of them.
+    {% endblocktrans %}
+  </p>
+</section>
+
+<section class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-8">
+  <div class="bg-white border border-gray-200 rounded-xl p-6">
+    <h2 class="text-2xl font-bold text-gray-900 mb-3">{% trans "For Store Owners" %}</h2>
+    <p class="text-gray-600 leading-relaxed">
+      {% blocktrans %}
+      Create your store, add your products, share your store link, and receive orders
+      from customers. You can keep your information and orders organized in one place.
+      {% endblocktrans %}
+    </p>
+  </div>
+  <div class="bg-white border border-gray-200 rounded-xl p-6">
+    <h2 class="text-2xl font-bold text-gray-900 mb-3">{% trans "For Customers" %}</h2>
+    <p class="text-gray-00 leading-relaxed">
+      {% blocktrans %}
+      Check stores, browse available products, place an order, and follow its progress.
+      You can also contact us if you need help using the platform.
+      {% endblocktrans %}
+    </p>
+  </div>
+</section>
+{% endblock %}

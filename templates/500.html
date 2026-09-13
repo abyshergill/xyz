@@ -1,9 +1,12 @@
+{% extends "base.html" %}
+{% load i18n %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Something Went Wrong</title>
+<title>{% trans "Something Went Wrong" %}</title>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#f9fafb; color:#1f2937; margin:0; padding:0; }
   .wrap { max-width: 480px; margin: 10vh auto; background:#fff; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 2.5rem; text-align:center; }
@@ -16,9 +19,9 @@
 <body>
   <div class="wrap">
     <p style="font-size:3rem; margin-bottom:1rem;">🔥🍳</p>
-    <h1>500 &mdash; Something Went Wrong</h1>
-    <p>Our Store hit a snag on our end. Please try again in a moment — if this keeps happening, let us know.</p>
-    <a class="btn" href="/">Back to Home</a>
+    <h1>500 &mdash; {% trans "Something Went Wrong" %}</h1>
+    <p>{% trans "Our Store hit a snag on our end. Please try again in a moment — if this keeps happening, let us know." %}</p>
+    <a class="btn" href="/">{% trans "Back to Home" %}</a>
   </div>
 </body>
 </html>

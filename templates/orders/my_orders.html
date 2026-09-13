@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% load currency_tags %}
-{% block title %}My Orders{% endblock %}
+{% load currency_tags i18n %}
+{% block title %}{% trans "My Orders" %}{% endblock %}
 {% block content %}
 
 <div class="flex items-center gap-3 mb-6">
   <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-2xl">📦</div>
   <div>
-    <h1 class="text-xl font-bold">My Orders</h1>
-    <p class="text-sm text-gray-500">Track and manage your past orders</p>
+    <h1 class="text-xl font-bold">{% trans "My Orders" %}</h1>
+    <p class="text-sm text-gray-500">{% trans "Track and manage your past orders" %}</p>
   </div>
 </div>
 
@@ -38,7 +38,7 @@
 
     <!-- Items summary -->
     <div class="border-t pt-3">
-      <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Items</p>
+      <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">{% trans "Items" %}</p>
       <ul class="text-sm text-gray-600 space-y-1">
         {% for item in order.items.all %}
         <li class="flex justify-between">
@@ -53,11 +53,11 @@
     <div class="flex flex-col sm:flex-row gap-2 mt-4 pt-3 border-t">
       <a href="{% url 'orders:order_confirmation' order.order_number %}"
          class="inline-flex items-center justify-center gap-1 text-xs font-medium text-white bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700 transition flex-1 sm:flex-none">
-        View Details
+        {% trans "View Details" %}
       </a>
       <a href="{% url 'orders:order_bill' order.order_number %}"
          class="inline-flex items-center justify-center gap-1 text-xs font-medium text-white bg-orange-600 px-4 py-2 rounded-lg hover:bg-orange-700 transition flex-1 sm:flex-none">
-        Download Bill
+        {% trans "Download Bill" %}
       </a>
     </div>
   </div>
@@ -66,8 +66,8 @@
 {% else %}
 <div class="card text-center py-12">
   <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">🛒</div>
-  <p class="text-gray-500 mb-4">You haven't placed any orders yet.</p>
-  <a href="{% url 'stores:store_list' %}" class="btn inline-block">Browse Stores</a>
+  <p class="text-gray-500 mb-4">{% trans "You haven't placed any orders yet." %}</p>
+  <a href="{% url 'stores:store_list' %}" class="btn inline-block">{% trans "Browse Stores" %}</a>
 </div>
 {% endif %}
 

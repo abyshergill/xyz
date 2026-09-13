@@ -1,6 +1,12 @@
 from django.contrib import admin
+from .models import Category, FoodItem, OperatingHours, Store, ContactMessage, TranslationMaster
 
-from .models import Category, FoodItem, OperatingHours, Store, ContactMessage
+
+@admin.register(TranslationMaster)
+class TranslationMasterAdmin(admin.ModelAdmin):
+    list_display = ("original_text", "language_code", "translated_text")
+    list_filter = ("language_code",)
+    search_fields = ("original_text", "translated_text")
 
 
 class OperatingHoursInline(admin.TabularInline):
@@ -28,6 +34,7 @@ class FoodItemAdmin(admin.ModelAdmin):
     list_filter = ("store", "category", "is_available")
     search_fields = ("name",)
 
+
 @admin.register(ContactMessage)
 class ContactMessageAdmin(admin.ModelAdmin):
     list_display = ("email", "phone_number", "submitted_at", "short_message")
@@ -39,4 +46,3 @@ class ContactMessageAdmin(admin.ModelAdmin):
     def short_message(self, obj):
         return obj.message[:80] + "..." if len(obj.message) > 80 else obj.message
     short_message.short_description = "Message"
-

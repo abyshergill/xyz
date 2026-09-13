@@ -18,7 +18,7 @@ taliawale.com, www.taliawale.com, calcomp.ai, www.calcomp.ai {
     # Security headers (defence-in-depth alongside Django's own security
     # middleware -- see SECURE_* settings in config/settings.py).
     header {
-       # Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
         Referrer-Policy "same-origin"
@@ -50,6 +50,7 @@ taliawale.com, www.taliawale.com, calcomp.ai, www.calcomp.ai {
         output file /var/log/caddy/yourtrolley_access.log
         format json
     }
+    reverse_proxy web:8000
 }
 
 # --- Running WITHOUT Docker? -------------------------------------------

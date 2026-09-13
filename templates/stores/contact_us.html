@@ -1,18 +1,20 @@
 {% extends "base.html" %}
-{% block title %}Contact Us{% endblock %}
+{% load i18n %}
+
+{% block title %}{% trans "Contact Us" %}{% endblock %}
+
 {% block content %}
 
-<h1 class="text-2xl font-bold mb-6">Contact Us</h1>
+<h1 class="text-2xl font-bold mb-6">{% trans "Contact Us" %}</h1>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
   <!-- ===== LEFT: Contact Information ===== -->
   <div class="space-y-6">
     <div class="card">
-      <h2 class="text-lg font-semibold mb-4">Get in Touch</h2>
+      <h2 class="text-lg font-semibold mb-4">{% trans "Get in Touch" %}</h2>
       <p class="text-gray-600 mb-4">
-        Have a complaint, concern, or question? Reach out to us using any of the
-        methods below, or fill out the form and we'll get back to you.
+        {% blocktrans %}Have a complaint, concern, or question? Reach out to us using any of the methods below, or fill out the form and we'll get back to you.{% endblocktrans %}
       </p>
 
       <!-- Email -->
@@ -21,7 +23,7 @@
           ✉️
         </div>
         <div>
-          <p class="text-sm font-medium text-gray-700">Email</p>
+          <p class="text-sm font-medium text-gray-700">{% trans "Email" %}</p>
           <a href="mailto:{{ platform_info.contact_email }}"
              class="text-orange-600 hover:underline">{{ platform_info.contact_email }}</a>
         </div>
@@ -33,7 +35,7 @@
           📞
         </div>
         <div>
-          <p class="text-sm font-medium text-gray-700">Phone</p>
+          <p class="text-sm font-medium text-gray-700">{% trans "Phone" %}</p>
           <a href="tel:{{ platform_info.contact_phone }}"
              class="text-orange-600 hover:underline">{{ platform_info.contact_phone }}</a>
         </div>
@@ -45,31 +47,31 @@
           📍
         </div>
         <div>
-          <p class="text-sm font-medium text-gray-700">Address</p>
+          <p class="text-sm font-medium text-gray-700">{% trans "Address" %}</p>
           <p class="text-gray-600">{{ platform_info.contact_address }}</p>
         </div>
       </div> -->
     </div>
 
     <div class="card bg-blue-50 border-blue-200">
-      <h3 class="font-semibold text-blue-900 mb-2">Response Time</h3>
+      <h3 class="font-semibold text-blue-900 mb-2">{% trans "Response Time" %}</h3>
       <p class="text-sm text-blue-800">
-        We aim to respond to all complaints and concerns within 24–48 hours.
-        <!-- For urgent matters, please call us directly. -->
+        {% trans "We aim to respond to all complaints and concerns within 24–48 hours." %}
+        <!-- {% trans "For urgent matters, please call us directly." %} -->
       </p>
     </div>
   </div>
 
   <!-- ===== RIGHT: Contact Form ===== -->
   <div class="card">
-    <h2 class="text-lg font-semibold mb-4">Submit a Complaint or Concern</h2>
+    <h2 class="text-lg font-semibold mb-4">{% trans "Submit a Complaint or Concern" %}</h2>
 
     <form method="post" class="space-y-4">
       {% csrf_token %}
 
       <!-- Name (optional) -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Name <span class="text-gray-400">(optional)</span></label>
+        <label class="block text-sm font-medium text-gray-700 mb-1">{% trans "Name" %} <span class="text-gray-400">({% trans "optional" %})</span></label>
         {{ form.name }}
         {% if form.name.errors %}
           <p class="text-red-500 text-xs mt-1">{{ form.name.errors|join:", " }}</p>
@@ -78,7 +80,7 @@
 
       <!-- Email (required) -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Email <span class="text-red-500">*</span></label>
+        <label class="block text-sm font-medium text-gray-700 mb-1">{% trans "Email" %} <span class="text-red-500">*</span></label>
         {{ form.email }}
         {% if form.email.errors %}
           <p class="text-red-500 text-xs mt-1">{{ form.email.errors|join:", " }}</p>
@@ -87,7 +89,7 @@
 
       <!-- Phone (required) -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number <span class="text-red-500">*</span></label>
+        <label class="block text-sm font-medium text-gray-700 mb-1">{% trans "Phone Number" %} <span class="text-red-500">*</span></label>
         {{ form.phone_number }}
         {% if form.phone_number.errors %}
           <p class="text-red-500 text-xs mt-1">{{ form.phone_number.errors|join:", " }}</p>
@@ -97,8 +99,8 @@
       <!-- Message (required, max 1000 chars) -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">
-          Message <span class="text-red-500">*</span>
-          <span class="text-gray-400 text-xs">(max 1000 characters)</span>
+          {% trans "Message" %} <span class="text-red-500">*</span>
+          <span class="text-gray-400 text-xs">({% trans "max 1000 characters" %})</span>
         </label>
         {{ form.message }}
         {% if form.message.errors %}
@@ -106,11 +108,11 @@
         {% endif %}
         <!-- Live character counter -->
         <p class="text-xs text-gray-400 mt-1">
-          <span id="char-count">0</span> / 1000 characters
+          <span id="char-count">0</span> / 1000 {% trans "characters" %}
         </p>
       </div>
 
-      <button type="submit" class="btn w-full">Submit</button>
+      <button type="submit" class="btn w-full">{% trans "Submit" %}</button>
     </form>
   </div>
 

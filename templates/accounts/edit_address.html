@@ -1,8 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Edit Address{% endblock %}
+{% load i18n %}
+
+{% block title %}{% trans "Edit Address" %}{% endblock %}
+
 {% block content %}
 <div class="max-w-md mx-auto card">
-    <h1 class="text-xl font-bold mb-4">Edit Address</h1>
+    <h1 class="text-xl font-bold mb-4">{% trans "Edit Address" %}</h1>
     <form method="post" novalidate>
         {% csrf_token %}
         {% for field in form %}
@@ -13,8 +16,8 @@
         </div>
         {% endfor %}
         <div class="flex gap-2">
-            <button type="submit" class="btn">Save Address</button>
-            <a href="{% url 'accounts:profile' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn">{% trans "Save Address" %}</button>
+            <a href="{% url 'accounts:profile' %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
         </div>
     </form>
 </div>

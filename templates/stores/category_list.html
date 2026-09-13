@@ -1,10 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Categories{% endblock %}
+{% load i18n %}
+
+{% block title %}{% trans "Categories" %}{% endblock %}
+
 {% block content %}
-<h1 class="text-xl font-bold mb-4">Categories &mdash; {{ store.name }}</h1>
+<h1 class="text-xl font-bold mb-4">{% trans "Categories" %} &mdash; {{ store.name }}</h1>
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
   <div class="card">
-    <h2 class="font-semibold mb-2">Add Category</h2>
+    <h2 class="font-semibold mb-2">{% trans "Add Category" %}</h2>
     <form method="post" novalidate>
       {% csrf_token %}
       {% for field in form %}
@@ -14,11 +17,11 @@
           {% for error in field.errors %}<p class="text-red-600 text-xs">{{ error }}</p>{% endfor %}
         </div>
       {% endfor %}
-      <button type="submit" class="btn">Add</button>
+      <button type="submit" class="btn">{% trans "Add" %}</button>
     </form>
   </div>
   <div class="card">
-      <h2 class="font-semibold mb-2">Existing Categories</h2>
+      <h2 class="font-semibold mb-2">{% trans "Existing Categories" %}</h2>
       <ul class="divide-y">
           {% for category in categories %}
           <li class="py-3 flex justify-between items-center">
@@ -26,20 +29,20 @@
               <div class="flex gap-2">
                   <a href="{% url 'stores:category_edit' store.slug category.pk %}"
                      class="inline-flex items-center gap-1 text-xs font-medium text-white bg-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-700 transition">
-                    ✏️ Edit
+                    ✏️ {% trans "Edit" %}
                   </a>
                   <form method="post" action="{% url 'stores:category_delete' store.slug category.pk %}"
-                        onsubmit="return confirm('Delete this category?');">
+                        onsubmit="return confirm('{% trans "Delete this category?" %}');">
                       {% csrf_token %}
                       <button type="submit"
                               class="inline-flex items-center gap-1 text-xs font-medium text-white bg-red-600 px-3 py-1.5 rounded-lg hover:bg-red-700 transition">
-                        🗑️ Delete
+                        🗑️ {% trans "Delete" %}
                       </button>
                   </form>
               </div>
           </li>
           {% empty %}
-          <li class="py-2 text-gray-500">No categories yet.</li>
+          <li class="py-2 text-gray-500">{% trans "No categories yet." %}</li>
           {% endfor %}
       </ul>
   </div>

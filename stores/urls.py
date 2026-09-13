@@ -1,10 +1,13 @@
 from django.urls import path
+from django.utils.translation import gettext as _
 
 from . import views
 
 app_name = "stores"
 
 urlpatterns = [
+    path("", views.landing_page, name="landing"),
+
     # Public
     path("stores/", views.store_list, name="store_list"),
     path("store/<slug:slug>/", views.store_detail, name="store_detail"),
@@ -31,3 +34,4 @@ urlpatterns = [
     path("notifications/read-all/", views.mark_all_notifications_read, name="mark_all_notifications_read"),
     path("notifications/count/", views.notification_count_api, name="notification_count_api"),
 ]
+

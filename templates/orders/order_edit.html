@@ -1,15 +1,15 @@
 {% extends "base.html" %}
-{% load currency_tags %}
-{% block title %}Edit Order {{ order.order_number }}{% endblock %}
+{% load currency_tags i18n %}
+{% block title %}{% trans "Edit Order" %} {{ order.order_number }}{% endblock %}
 {% block content %}
 
 <div class="max-w-2xl mx-auto">
-    <h1 class="text-xl font-bold mb-4">Edit Order &mdash; {{ order.order_number }}</h1>
+    <h1 class="text-xl font-bold mb-4">{% trans "Edit Order" %} &mdash; {{ order.order_number }}</h1>
 
     <form method="post" novalidate>
         {% csrf_token %}
         <div class="card mb-4 space-y-3">
-            <h2 class="font-semibold mb-2">Customer Information</h2>
+            <h2 class="font-semibold mb-2">{% trans "Customer Information" %}</h2>
             {% for field in form %}
             <div>
                 <label class="block text-sm font-medium mb-1">{{ field.label }}</label>
@@ -20,8 +20,8 @@
         </div>
 
         <div class="flex gap-2">
-            <button type="submit" class="btn">Save Changes</button>
-            <a href="{% url 'orders:order_detail' order.order_number %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn">{% trans "Save Changes" %}</button>
+            <a href="{% url 'orders:order_detail' order.order_number %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
         </div>
     </form>
 </div>

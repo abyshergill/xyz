@@ -1,22 +1,38 @@
+{% load static %}
+{% load i18n %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ LANGUAGE_CODE|default:'en' }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon"
+      href="{% static 'images/favicon.ico' %}?v=999">
 <title>{% block title %}YourTrolley{% endblock %}</title>
-<!-- <script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="/static/css/main.css"> -->
-<link rel="stylesheet" href="/static/css/tailwind.css">
+<script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="/static/css/main.css">
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col text-gray-800">
 
 <nav class="bg-orange-600 text-white shadow relative">
   <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between">
-    <a href="{% url 'stores:store_list' %}" class="font-bold text-lg">TaliaWale</a>
+    <a href="{% url 'stores:store_list' %}" class="font-bold text-lg">Taliawale</a>
     
-    <!-- Sandwich Button (Visible on mobile & smaller tablets) -->
-    <!-- FIX: Toggling both 'hidden' and 'flex' so flex-col works on mobile -->
+      <!-- Language Switcher -->
+      {% get_current_language as CURRENT_LANGUAGE %}
+      <form action="{% url 'set_language' %}" method="post" id="lang-form" class="inline-block">
+        {% csrf_token %}
+        <input name="next" type="hidden" value="{{ request.get_full_path }}">
+        <select name="language"
+                onchange="document.getElementById('lang-form').submit()"
+                class="bg-orange-700 text-white text-sm rounded px-2 py-1 border-none focus:outline-none cursor-pointer"
+                aria-label="{% trans 'Select language' %}">
+          <option value="en" {% if CURRENT_LANGUAGE == 'en' %}selected{% endif %}>🇬🇧 English</option>
+          <option value="th" {% if CURRENT_LANGUAGE == 'th' %}selected{% endif %}>🇹🇭 ไทย</option>
+          <option value="zh-hans" {% if CURRENT_LANGUAGE == 'zh-hans' or CURRENT_LANGUAGE == 'zh_Hans' %}selected{% endif %}>🇨🇳 中文</option>
+        </select>
+      </form>
+
+    <!-- Sandwich Button -->
     <button class="md:hidden focus:outline-none p-2 rounded-lg hover:bg-orange-700 transition" 
             onclick="const nav = document.getElementById('nav-links'); nav.classList.toggle('hidden'); nav.classList.toggle('flex');">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -26,53 +42,52 @@
     
     <!-- Collapsible Dropdown Menu -->
     <div id="nav-links" class="hidden md:flex flex-col md:flex-row gap-3 md:gap-4 items-start md:items-center w-full md:w-auto mt-3 md:mt-0 pt-3 md:pt-0 border-t md:border-t-0 border-orange-500 md:border-none bg-orange-700 md:bg-transparent -mx-4 px-4 pb-4 md:mx-0 md:px-0 md:pb-0 shadow-lg md:shadow-none">
-      
-      <!-- FIX: Added 'block' to all anchor tags so they stack correctly -->
-      <a href="{% url 'stores:store_list' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">Browse Stores</a>
-      <a href="{% url 'orders:track_order' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">Track Order</a>
-      <a href="{% url 'stores:contact_us' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">Contact Us</a>
+      <a href="{% url 'stores:landing' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">{% trans "Info" %}</a>
+      <a href="{% url 'stores:store_list' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">{% trans "Browse Stores" %}</a>
+      <a href="{% url 'orders:track_order' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">{% trans "Track Order" %}</a>
+      <a href="{% url 'stores:contact_us' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">{% trans "Contact Us" %}</a>
       
       {% if user.is_authenticated and user.is_customer_role %}
         <a href="{% url 'stores:notifications' %}" class="relative block hover:underline py-1 md:py-0 w-full md:w-auto">
-        🔔 Notify
+        🔔 {% trans "Notifications" %}
         {% if unread_notification_count %}
           <span id="notification-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{{ unread_notification_count }}</span>
         {% else %}
           <span id="notification-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
         {% endif %}
       </a>
-        <a href="{% url 'accounts:profile' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">My Profile</a>
-        <a href="{% url 'orders:my_orders' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">My Orders</a>
+        <a href="{% url 'accounts:profile' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">{% trans "My Profile" %}</a>
+        <a href="{% url 'orders:my_orders' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">{% trans "My Orders" %}</a>
       {% endif %}
       
       {% if user.is_authenticated %}
         {% if user.is_owner_role %}
             <a href="{% url 'stores:notifications' %}" class="relative block hover:underline py-1 md:py-0 w-full md:w-auto">
-            🔔 Notify
+            🔔 {% trans "Notifications" %}
             {% if unread_notification_count %}
               <span id="notification-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{{ unread_notification_count }}</span>
             {% else %}
               <span id="notification-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
             {% endif %}
           </a>
-          <a href="{% url 'stores:owner_dashboard' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">My Store</a>
-          <a href="{% url 'orders:order_list' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">Orders</a>
-          <a href="{% url 'analytics:owner_dashboard' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">Analytics</a>
-          <a href="{% url 'accounts:change_password' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">Change Password</a>
+          <a href="{% url 'stores:owner_dashboard' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">{% trans "My Store" %}</a>
+          <a href="{% url 'orders:order_list' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">{% trans "Orders" %}</a>
+          <a href="{% url 'analytics:owner_dashboard' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">{% trans "Analytics" %}</a>
+          <a href="{% url 'accounts:change_password' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">{% trans "Change Password" %}</a>
         {% endif %}
         {% if user.is_admin_role %}
-          <a href="{% url 'platform_admin:dashboard' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">Admin</a>
+          <a href="{% url 'platform_admin:dashboard' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">{% trans "Platform Admin" %}</a>
         {% endif %}
         
-        <span class="block text-orange-200 text-sm py-1 md:py-0">Hi, {{ user.username }}</span>
+        <span class="block text-orange-200 text-sm py-1 md:py-0">{% trans "Hi" %}, {{ user.username }}</span>
         <form method="post" action="{% url 'accounts:logout' %}" class="w-full md:w-auto">
           {% csrf_token %}
-          <button type="submit" class="block hover:underline text-left w-full py-1 md:py-0">Logout</button>
+          <button type="submit" class="block hover:underline text-left w-full py-1 md:py-0">{% trans "Log In" %}</button>
         </form>
       {% else %}
-        <a href="{% url 'accounts:login' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">Login</a>
-        <a href="{% url 'accounts:register_customer' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">Sign Up</a>
-        <a href="{% url 'accounts:register_owner' %}" class="block hover:underline bg-orange-800 px-3 py-2 rounded text-center w-full md:w-auto">Register Your Store</a>
+        <a href="{% url 'accounts:login' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">{% trans "Login" %}</a>
+        <a href="{% url 'accounts:register_customer' %}" class="block hover:underline py-1 md:py-0 w-full md:w-auto">{% trans "Customer Sign Up" %}</a>
+        <a href="{% url 'accounts:register_owner' %}" class="block hover:underline bg-orange-800 px-3 py-2 rounded text-center w-full md:w-auto">{% trans "Register Your Store" %}</a>
       {% endif %}
     </div>
   </div>
@@ -96,9 +111,9 @@
 </main>
 
 <footer class="bg-gray-900 text-gray-400 text-center text-sm py-4">
-  &copy; {% now "Y" %} TaliaWale. All rights reserved.
+  &copy; {% now "Y" %} TaliaWale. {% trans "All rights reserved." %}
 </footer>
-<!-- Hidden element to pass Django values to JavaScript (avoids VS Code syntax errors) -->
+
 <div id="notification-config"
      data-api-url="{% url 'stores:notification_count_api' %}"
      data-notifications-url="{% url 'stores:notifications' %}"
@@ -146,5 +161,4 @@
 </script>
 
 </body>
-
 </html>

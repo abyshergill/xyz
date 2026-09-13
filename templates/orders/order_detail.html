@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% load currency_tags %}
-{% block title %}Order {{ order.order_number }}{% endblock %}
+{% load currency_tags i18n %}
+{% block title %}{% trans "Order" %} {{ order.order_number }}{% endblock %}
 {% block content %}
 
 <!-- ===== HEADER ===== -->
 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
   <div>
-    <h1 class="text-xl font-bold">Order {{ order.order_number }}</h1>
+    <h1 class="text-xl font-bold">{% trans "Order" %} {{ order.order_number }}</h1>
     <span class="inline-block mt-1 text-xs font-medium px-2.5 py-1 rounded-full
       {% if order.status == 'COMPLETED' %}bg-green-100 text-green-700
       {% elif order.status == 'CANCELLED' %}bg-red-100 text-red-700
@@ -18,17 +18,17 @@
   <div class="flex flex-wrap gap-2">
     <a href="{% url 'orders:order_edit' order.order_number %}"
        class="inline-flex items-center gap-1 text-xs font-medium text-white bg-blue-600 px-3 py-2 rounded-lg hover:bg-blue-700 transition">
-      ✏️ Edit Details
+      ✏️ {% trans "Edit Details" %}
     </a>
     <a href="{% url 'orders:order_bill' order.order_number %}"
        class="inline-flex items-center gap-1 text-xs font-medium text-white bg-orange-600 px-3 py-2 rounded-lg hover:bg-orange-700 transition">
-      📄 Download Bill
+      📄 {% trans "Download Bill" %}
     </a>
-    <form method="post" action="{% url 'orders:order_delete' order.order_number %}" onsubmit="return confirm('Delete this order permanently?');">
+    <form method="post" action="{% url 'orders:order_delete' order.order_number %}" onsubmit="return confirm('{% trans "Delete this order permanently?" %}');">
       {% csrf_token %}
       <button type="submit"
               class="inline-flex items-center gap-1 text-xs font-medium text-white bg-red-600 px-3 py-2 rounded-lg hover:bg-red-700 transition">
-        🗑️ Delete Order
+        🗑️ {% trans "Delete Order" %}
       </button>
     </form>
   </div>
@@ -38,30 +38,30 @@
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
   <!-- Customer Info -->
   <div class="card">
-    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Customer Information</h2>
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{% trans "Customer Information" %}</h2>
     <div class="space-y-2 text-sm">
       <div class="flex gap-2">
-        <span class="text-gray-400 min-w-[70px]">Name:</span>
+        <span class="text-gray-400 min-w-[70px]">{% trans "Name:" %}</span>
         <span class="font-medium">{{ order.customer_name|default:"—" }}</span>
       </div>
       <div class="flex gap-2">
-        <span class="text-gray-400 min-w-[70px]">Phone:</span>
+        <span class="text-gray-400 min-w-[70px]">{% trans "Phone:" %}</span>
         <span>{{ order.contact_phone|default:"—" }}</span>
       </div>
       <div class="flex gap-2">
-        <span class="text-gray-400 min-w-[70px]">Email:</span>
+        <span class="text-gray-400 min-w-[70px]">{% trans "Email:" %}</span>
         <span class="break-all">{{ order.contact_email|default:"—" }}</span>
       </div>
       <div class="flex gap-2">
-        <span class="text-gray-400 min-w-[70px]">Table:</span>
+        <span class="text-gray-400 min-w-[70px]">{% trans "Table:" %}</span>
         <span>{{ order.table_number|default:"—" }}</span>
       </div>
       <div class="flex gap-2">
-        <span class="text-gray-400 min-w-[70px]">Address:</span>
+        <span class="text-gray-400 min-w-[70px]">{% trans "Address:" %}</span>
         <span>{{ order.customer_address|default:"—" }}</span>
       </div>
       <div class="flex gap-2">
-        <span class="text-gray-400 min-w-[70px]">Remarks:</span>
+        <span class="text-gray-400 min-w-[70px]">{% trans "Remarks:" %}</span>
         <span>{{ order.remarks|default:"—" }}</span>
       </div>
     </div>
@@ -69,18 +69,18 @@
 
   <!-- Totals -->
   <div class="card">
-    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Order Summary</h2>
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{% trans "Order Summary" %}</h2>
     <div class="space-y-2 text-sm">
       <div class="flex justify-between">
-        <span class="text-gray-500">Subtotal</span>
+        <span class="text-gray-500">{% trans "Subtotal" %}</span>
         <span>{% currency order.store order.subtotal %}</span>
       </div>
       <div class="flex justify-between">
-        <span class="text-gray-500">Tax</span>
+        <span class="text-gray-500">{% trans "Tax" %}</span>
         <span>{% currency order.store order.tax_total %}</span>
       </div>
       <div class="flex justify-between pt-2 border-t font-bold text-base">
-        <span>Grand Total</span>
+        <span>{% trans "Grand Total" %}</span>
         <span>{% currency order.store order.grand_total %}</span>
       </div>
     </div>
@@ -89,12 +89,12 @@
 
 <!-- ===== UPDATE STATUS ===== -->
 <div class="card mb-4">
-  <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Update Status</h2>
+  <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{% trans "Update Status" %}</h2>
   {% if order.status == "PENDING" %}
   <form method="post" action="{% url 'orders:order_update_status' order.order_number %}" class="mb-3">
     {% csrf_token %}
     <input type="hidden" name="status" value="CONFIRMED">
-    <button type="submit" class="btn w-full sm:w-auto">✅ Confirm Order Received</button>
+    <button type="submit" class="btn w-full sm:w-auto">✅ {% trans "Confirm Order Received" %}</button>
   </form>
   {% endif %}
   <form method="post" action="{% url 'orders:order_update_status' order.order_number %}" class="flex flex-col sm:flex-row gap-2">
@@ -104,13 +104,13 @@
         <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>{{ label }}</option>
       {% endfor %}
     </select>
-    <button type="submit" class="btn btn-secondary sm:w-auto">Set Status</button>
+    <button type="submit" class="btn btn-secondary sm:w-auto">{% trans "Set Status" %}</button>
   </form>
 </div>
 
 <!-- ===== ITEMS ===== -->
 <div class="card mb-4">
-  <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Items</h2>
+  <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{% trans "Items" %}</h2>
   <ul class="divide-y">
     {% for item in order.items.all %}
     <li class="py-3">
@@ -118,9 +118,11 @@
         <div class="flex-1">
           <span class="font-medium">{{ item.quantity }} &times; {{ item.item_name_snapshot }}</span>
           {% if item.tax_percentage_snapshot > 0 %}
-          <p class="text-xs text-gray-400 mt-0.5">Tax: {{ item.tax_percentage_snapshot }}% = {% currency order.store item.tax_amount %} (base: {% currency order.store item.line_total %})</p>
+          <p class="text-xs text-gray-400 mt-0.5">
+            {% blocktrans with tax_pct=item.tax_percentage_snapshot tax_amt=item.tax_amount|currency_filter:order.store base_amt=item.line_total|currency_filter:order.store %}Tax: {{ tax_pct }}% = {{ tax_amt }} (base: {{ base_amt }}){% endblocktrans %}
+          </p>
           {% else %}
-          <p class="text-xs text-gray-400 mt-0.5">incl. tax (price is final)</p>
+          <p class="text-xs text-gray-400 mt-0.5">{% trans "incl. tax (price is final)" %}</p>
           {% endif %}
         </div>
         <span class="font-semibold whitespace-nowrap">{% currency order.store item.line_total_with_tax %}</span>
@@ -129,19 +131,19 @@
       <div class="flex items-center gap-2 mt-2 pl-0 sm:pl-4">
         <form method="post" action="{% url 'orders:order_item_edit' order.order_number item.pk %}" class="flex items-center gap-1">
           {% csrf_token %}
-          <label class="text-xs text-gray-400">Qty:</label>
+          <label class="text-xs text-gray-400">{% trans "Qty:" %}</label>
           <input type="number" name="quantity" value="{{ item.quantity }}" min="1" max="99"
                  class="w-14 px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-center">
           <button type="submit"
                   class="inline-flex items-center gap-1 text-xs font-medium text-white bg-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-700 transition whitespace-nowrap">
-            ✏️ Update
+            ✏️ {% trans "Update" %}
           </button>
         </form>
-        <form method="post" action="{% url 'orders:order_item_delete' order.order_number item.pk %}" onsubmit="return confirm('Remove this item?');">
+        <form method="post" action="{% url 'orders:order_item_delete' order.order_number item.pk %}" onsubmit="return confirm('{% trans "Remove this item?" %}');">
           {% csrf_token %}
           <button type="submit"
                   class="inline-flex items-center gap-1 text-xs font-medium text-white bg-red-600 px-3 py-1.5 rounded-lg hover:bg-red-700 transition whitespace-nowrap">
-            🗑️ Remove
+            🗑️ {% trans "Remove" %}
           </button>
         </form>
       </div>
@@ -151,28 +153,28 @@
 
   <!-- Add item to order -->
   <div class="mt-4 pt-3 border-t">
-    <h3 class="text-sm font-semibold mb-2">Add Item to Order</h3>
+    <h3 class="text-sm font-semibold mb-2">{% trans "Add Item to Order" %}</h3>
     <form method="post" action="{% url 'orders:order_item_add' order.order_number %}" class="flex flex-col sm:flex-row gap-2">
       {% csrf_token %}
       <div class="flex-1">
-        <label class="block text-xs font-medium mb-1">Category</label>
+        <label class="block text-xs font-medium mb-1">{% trans "Category" %}</label>
         <select id="add-item-category" class="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm"
                 onchange="filterItemsByCategory(this)">
-          <option value="">Select category...</option>
+          <option value="">{% trans "Select category..." %}</option>
         </select>
       </div>
       <div class="flex-1">
-        <label class="block text-xs font-medium mb-1">Item</label>
+        <label class="block text-xs font-medium mb-1">{% trans "Item" %}</label>
         <select name="food_item_id" id="add-item-select" class="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm" disabled>
-          <option value="">Select category first...</option>
+          <option value="">{% trans "Select category first..." %}</option>
         </select>
       </div>
       <div>
-        <label class="block text-xs font-medium mb-1">Qty</label>
+        <label class="block text-xs font-medium mb-1">{% trans "Qty" %}</label>
         <input type="number" name="quantity" value="1" min="1" max="99" class="w-full sm:w-16 px-2 py-2 border border-gray-300 rounded-lg text-sm">
       </div>
       <div class="flex items-end">
-        <button type="submit" class="btn w-full sm:w-auto">Add</button>
+        <button type="submit" class="btn w-full sm:w-auto">{% trans "Add" %}</button>
       </div>
     </form>
   </div>
@@ -181,7 +183,7 @@
 <!-- ===== MERGED ORDERS ===== -->
 {% if child_orders %}
 <div class="card mb-4">
-  <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Merged Orders</h2>
+  <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{% trans "Merged Orders" %}</h2>
   <ul class="divide-y text-sm">
     {% for child in child_orders %}
     <li class="py-2">
@@ -219,12 +221,12 @@ function filterItemsByCategory(catSelectEl) {
     const catPk = catSelectEl.value;
     if (!catPk) {
         itemSelect.disabled = true;
-        itemSelect.innerHTML = '<option value="">Select category first...</option>';
+        itemSelect.innerHTML = '<option value="">{% trans "Select category first..." %}</option>';
         return;
     }
     const catItems = orderCategories[catPk].items;
     itemSelect.disabled = false;
-    itemSelect.innerHTML = '<option value="">Select item...</option>' +
+    itemSelect.innerHTML = '<option value="">{% trans "Select item..." %}</option>' +
         catItems.map(item => `<option value="${item.pk}">${item.name} (${item.price})</option>`).join('');
 }
 </script>

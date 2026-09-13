@@ -1,8 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Merge Orders{% endblock %}
+{% load i18n %}
+
+{% block title %}{% trans "Merge Orders" %}{% endblock %}
 {% block content %}
 <div class="max-w-lg mx-auto card">
-  <h1 class="text-xl font-bold mb-4">Merge Orders &mdash; {{ store.name }}</h1>
+  <h1 class="text-xl font-bold mb-4">{% trans "Merge Orders" %} &mdash; {{ store.name }}</h1>
   <form method="post" novalidate>
     {% csrf_token %}
     {% for error in form.orders_to_merge.errors %}<p class="text-red-600 text-xs">{{ error }}</p>{% endfor %}
@@ -14,7 +16,7 @@
         </label>
       {% endfor %}
     </div>
-    <button type="submit" class="btn w-full">Merge Selected Orders</button>
+    <button type="submit" class="btn w-full">{% trans "Merge Selected Orders" %}</button>
   </form>
 </div>
 {% endblock %}

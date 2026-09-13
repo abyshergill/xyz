@@ -22,11 +22,25 @@ env = environ.Env(
 # precedence over anything in .env.
 environ.Env.read_env(BASE_DIR / ".env")
 
-SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-CHANGE-ME-IN-PRODUCTION")
+SECRET_KEY = env("DJANGO_SECRET_KEY", default="ab c`d efghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=~`")
 
-DEBUG = env.bool("DEBUG", default=True)
+DEBUG = env.bool("DJANGO_DEBUG", default=True)
 
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["143.198.161.140", "localhost", "127.0.0.1"])
+#ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["127.0.0.1", "localhost" ,"143.198.161.140"])
+# ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["127.0.0.1", "localhost"])
+
+ALLOWED_HOSTS = env.list(
+    "DJANGO_ALLOWED_HOSTS",
+    default=["127.0.0.1", "localhost"],
+)
+
+CSRF_TRUSTED_ORIGINS = env.list(
+    "DJANGO_CSRF_TRUSTED_ORIGINS",
+    default=[
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
+    ],
+)
 
 # ---------------------------------------------------------------------------
 # Applications
@@ -39,6 +53,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.humanize",
+    "django.contrib.sites",   # required by allauth
 
     # Local apps
     "accounts",
@@ -46,7 +61,71 @@ INSTALLED_APPS = [
     "orders",
     "analytics",
     "platform_admin",
+
+    # Third-party apps
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
 ]
+
+
+SITE_ID = 1  # required by allauth
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+
+# Provider Configuration
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': env("GOOGLE_OAUTH_CLIENT_ID", default=""),
+            'secret': env("GOOGLE_OAUTH_CLIENT_SECRET", default=""),
+            'key': ''
+        }, 
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+	   'prompt': 'select_account',
+        }
+    }
+}
+
+SOCIALACCOUNT_ADAPTER = 'accounts.adapters.CustomSocialAccountAdapter'
+SOCIALACCOUNT_LOGIN_ON_GET = True  # Automatically log in users after successful OAuth login
+
+# Force allauth to automatically create user accounts from Google profile data
+SOCIALACCOUNT_AUTO_SIGNUP = True
+
+# Disable email verification requirements for social signups
+SOCIALACCOUNT_EMAIL_VERIFICATION = "none"
+ACCOUNT_EMAIL_VERIFICATION = "none"
+
+# Use email as the main account identifier
+# Django Allauth
+ACCOUNT_LOGIN_METHODS = {"email"}
+
+ACCOUNT_SIGNUP_FIELDS = [
+    "email*",
+    "password1*",
+    "password2*",
+]
+
+
+# Connect Google logins automatically if the email matches an existing user account
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = False
+
+
+# # Redirect settings after login/logout
+# LOGIN_REDIRECT_URL = '/'
+# LOGOUT_REDIRECT_URL = '/'
 
 # ---------------------------------------------------------------------------
 # Google OAuth (commented out — enable when ready)
@@ -80,6 +159,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "accounts.middleware.RoleBasedAccessMiddleware",       # custom RBAC guard, see accounts/middleware.py
+    "allauth.account.middleware.AccountMiddleware",        # allauth middleware for social auth
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -96,6 +176,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "stores.context_processors.owner_store",
+                "accounts.context_processors.notifications", 
             ],
         },
     },
@@ -139,9 +220,12 @@ else:
 # ---------------------------------------------------------------------------
 AUTH_USER_MODEL = "accounts.User"
 
-AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
-]
+# NOTE: AUTHENTICATION_BACKENDS is already defined above (near
+# SOCIALACCOUNT_PROVIDERS) with both ModelBackend and allauth's backend.
+# It used to be redefined here with only ModelBackend, which silently
+# overwrote the first list and broke Google login (allauth's backend
+# was no longer active, so the user could complete the Google OAuth
+# handshake but Django would never actually log them in).
 
 LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "accounts:dashboard_redirect"
@@ -176,12 +260,13 @@ USE_TZ = True
 # ---------------------------------------------------------------------------
 # Static & media files
 # ---------------------------------------------------------------------------
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
 
 # Image upload hard limits (defence-in-depth against DoS / storage abuse).
 # Enforced again in stores/utils.py via Pillow validation.
@@ -200,7 +285,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CSRF_COOKIE_HTTPONLY = False  # must be readable by JS if you read the token for AJAX; template tag is preferred instead
 CSRF_COOKIE_SAMESITE = "Lax"
 CSRF_USE_SESSIONS = False
-CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
+
+
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+SECURE_BROWSER_XSS_FILTER = True
 
 # --- Sessions ---
 SESSION_COOKIE_HTTPONLY = True
@@ -217,15 +305,17 @@ SECURE_BROWSER_XSS_FILTER = True  # legacy header, harmless to keep
 # These are only turned on when DEBUG is False so local development over
 # plain HTTP still works.
 if not DEBUG:
-    SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
+    SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=False)
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+
     SECURE_HSTS_SECONDS = 60 * 60 * 24 * 365
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     # Caddy sets X-Forwarded-Proto, so Django must trust that header to know
     # the original request was HTTPS.
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    USE_X_FORWARDED_HOST = True
 else:
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
@@ -281,12 +371,13 @@ DEFAULT_FROM_EMAIL = env("DJANGO_DEFAULT_FROM_EMAIL", default="no-reply@yourtrol
 # Cache (used for login brute-force lockout tracking -- see accounts/throttling.py)
 # ---------------------------------------------------------------------------
 # --- ACTIVE: in-memory cache (fine for local dev / a single-process deploy) ---
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-    }
-}
-
+#CACHES = {
+#    "default": {
+#        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+#        "LOCATION": "redis://redis:6379/1",
+#    }
+#}
+#===============================================================================
 # --- PRODUCTION: swap to Redis (or Memcached) once running multiple Gunicorn
 #     workers, so the brute-force lockout counters are shared across all of
 #     them instead of being tracked separately per-process. Requires
@@ -299,6 +390,21 @@ CACHES = {
 #         "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
 #     }
 # }
+
+if env.bool("DJANGO_USE_POSTGRES", default=False):
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": env("DJANGO_REDIS_URL", default="redis://redis:6379/1"),
+            "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        }
+    }
 
 # ---------------------------------------------------------------------------
 # Site base URL (used to build absolute QR-code target links)

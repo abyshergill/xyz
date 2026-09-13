@@ -560,6 +560,10 @@ def store_list(request):
     })
 
 
+def landing_page(request):
+    """Public landing page — explains the platform to new visitors."""
+    return render(request, "stores/landing.html")
+
 @login_required
 def notifications(request):
     """Show all notifications for the logged-in user."""

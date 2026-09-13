@@ -1,13 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Notifications{% endblock %}
+{% load i18n %}
+
+{% block title %}{% trans "Notifications" %}{% endblock %}
+
 {% block content %}
 
 <div class="flex justify-between items-center mb-4">
-  <h1 class="text-xl font-bold">Notifications</h1>
+  <h1 class="text-xl font-bold">{% trans "Notifications" %}</h1>
   {% if unread_count %}
     <form method="post" action="{% url 'stores:mark_all_notifications_read' %}">
       {% csrf_token %}
-      <button type="submit" class="btn btn-secondary text-sm">Mark all as read</button>
+      <button type="submit" class="btn btn-secondary text-sm">{% trans "Mark all as read" %}</button>
     </form>
   {% endif %}
 </div>
@@ -27,12 +30,12 @@
     {% if not notif.is_read %}
     <form method="post" action="{% url 'stores:mark_notification_read' notif.pk %}">
       {% csrf_token %}
-      <button type="submit" class="text-xs text-orange-600 hover:underline">Mark read</button>
+      <button type="submit" class="text-xs text-orange-600 hover:underline">{% trans "Mark read" %}</button>
     </form>
     {% endif %}
   </div>
   {% empty %}
-  <p class="text-gray-500 text-center py-8">No notifications yet.</p>
+  <p class="text-gray-500 text-center py-8">{% trans "No notifications yet." %}</p>
   {% endfor %}
 </div>
 

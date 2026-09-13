@@ -1,13 +1,15 @@
 {% extends "base.html" %}
-{% block title %}Page Not Found{% endblock %}
+{% load i18n %}
+
+{% block title %}{% trans "Page Not Found" %}{% endblock %}
+
 {% block content %}
 <div class="max-w-lg mx-auto card text-center py-10">
   <p class="text-6xl mb-4">🍜💨</p>
-  <h1 class="text-3xl font-bold mb-2">404 &mdash; Page Not Found</h1>
+  <h1 class="text-3xl font-bold mb-2">404 &mdash; {% trans "Page Not Found" %}</h1>
   <p class="text-gray-600 mb-6">
-    Looks like this stall packed up and moved. The page you're looking for
-    doesn't exist, or the link may be out of date.
+    {% trans "Looks like this stall packed up and moved. The page you're looking for doesn't exist, or the link may be out of date." %}
   </p>
-  <a href="{% url 'stores:store_list' %}" class="btn">Browse Stores</a>
+  <a href="{% url 'stores:store_list' %}" class="btn">{% trans "Browse Stores" %}</a>
 </div>
 {% endblock %}

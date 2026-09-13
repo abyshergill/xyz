@@ -1,3 +1,4 @@
+{% load static %}
 {% load i18n %}
 <!DOCTYPE html>
 <html lang="en">
@@ -6,10 +7,12 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{% block head_title %}{% endblock head_title %} · TaliaWale</title>
+<link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}?v=3">
+<link rel="shortcut icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}?v=3">
 <!-- <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="/static/css/main.css"> -->
-<link rel="stylesheet" href="/static/css/tailwind.css">
-<link rel="stylesheet" href="/static/css/main.css">
+<link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+<link rel="stylesheet" href="{% static 'css/main.css' %}">
 {% block extra_head %}{% endblock extra_head %}
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col text-gray-800">
@@ -17,7 +20,7 @@
 <nav class="bg-orange-600 text-white shadow">
   <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
     <a href="/" class="font-bold text-lg">TaliaWale</a>
-    <a href="/" class="text-sm hover:underline">Back to site</a>
+    <a href="/" class="text-sm hover:underline">{% trans "Back to site" %}</a>
   </div>
 </nav>
 
@@ -46,7 +49,7 @@
 </main>
 
 <footer class="bg-gray-900 text-gray-400 text-center text-sm py-4">
-  &copy; {% now "Y" %} TaliaWale. All rights reserved.
+  &copy; {% now "Y" %} TaliaWale. {% trans "All rights reserved." %}
 </footer>
 
 </body>

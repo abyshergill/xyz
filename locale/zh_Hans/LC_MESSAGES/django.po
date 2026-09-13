@@ -1,0 +1,1566 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-11 16:43+0000\n"
+"PO-Revision-Date: 2026-09-11 16:30+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Chinese <zh_Hans@li.org>\n"
+"Language: zh_Hans\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: templates/400.html:4 templates/400.html:9
+msgid "Bad Request"
+msgstr "错误的请求"
+
+#: templates/400.html:11
+msgid "We couldn't process that request. Please go back and try again."
+msgstr "无法处理该请求，请返回并重试。"
+
+#: templates/400.html:13
+msgid "Browse Food Stores"
+msgstr "浏览美食小吃店"
+
+#: templates/403.html:4 templates/403.html:9
+msgid "Access Denied"
+msgstr "拒绝访问"
+
+#: templates/403.html:11
+msgid ""
+"You don't have permission to view this page. If you think this is a mistake, "
+"make sure you're logged into the right account."
+msgstr "您无权查看此页面。如果您认为这是个错误，请确认您登录了正确的账号。"
+
+#: templates/403.html:13 templates/404.html:13 templates/base.html:46
+#: templates/orders/my_orders.html:70
+msgid "Browse Stores"
+msgstr "浏览店铺"
+
+#: templates/404.html:4 templates/404.html:9
+msgid "Page Not Found"
+msgstr "页面未找到"
+
+#: templates/404.html:11
+msgid ""
+"Looks like this stall packed up and moved. The page you're looking for "
+"doesn't exist, or the link may be out of date."
+msgstr "该摊位似乎已经搬走。您正在寻找的页面不存在，或者链接已过期。"
+
+#: templates/500.html:9 templates/500.html:22
+msgid "Something Went Wrong"
+msgstr "出错了"
+
+#: templates/500.html:23
+msgid ""
+"Our Store hit a snag on our end. Please try again in a moment — if this "
+"keeps happening, let us know."
+msgstr "我们的系统遇到了些小问题，请稍后重试。如果问题持续存在，请告知我们。"
+
+#: templates/500.html:24
+msgid "Back to Home"
+msgstr "返回首页"
+
+#: templates/accounts/change_password.html:4
+#: templates/accounts/change_password.html:8
+#: templates/accounts/change_password.html:27
+#: templates/accounts/profile.html:55 templates/base.html:76
+msgid "Change Password"
+msgstr "修改密码"
+
+#: templates/accounts/change_password.html:12
+msgid "Current Password"
+msgstr "当前密码"
+
+#: templates/accounts/change_password.html:17
+msgid "New Password"
+msgstr "新密码"
+
+#: templates/accounts/change_password.html:22
+msgid "Confirm New Password"
+msgstr "确认新密码"
+
+#: templates/accounts/change_password.html:28
+#: templates/accounts/change_username.html:20
+#: templates/accounts/edit_address.html:20 templates/accounts/profile.html:86
+#: templates/orders/order_edit.html:24 templates/stores/category_edit.html:20
+msgid "Cancel"
+msgstr "取消"
+
+#: templates/accounts/change_username.html:4
+#: templates/accounts/change_username.html:8 templates/accounts/profile.html:46
+msgid "Change Username"
+msgstr "修改用户名"
+
+#: templates/accounts/change_username.html:9
+msgid "Current username:"
+msgstr "当前用户名："
+
+#: templates/accounts/change_username.html:13
+msgid "New Username"
+msgstr "新用户名"
+
+#: templates/accounts/change_username.html:19
+msgid "Update Username"
+msgstr "更新用户名"
+
+#: templates/accounts/edit_address.html:4
+#: templates/accounts/edit_address.html:8
+msgid "Edit Address"
+msgstr "编辑地址"
+
+#: templates/accounts/edit_address.html:19
+msgid "Save Address"
+msgstr "保存地址"
+
+#: templates/accounts/login.html:4 templates/base.html:88
+msgid "Login"
+msgstr "登录"
+
+#: templates/accounts/login.html:8 templates/accounts/login.html:18
+#: templates/base.html:85
+msgid "Log In"
+msgstr "登录"
+
+#: templates/accounts/login.html:14
+msgid "Username or Email"
+msgstr "用户名或电子邮件"
+
+#: templates/accounts/login.html:16 templates/accounts/profile.html:50
+msgid "Password"
+msgstr "密码"
+
+#: templates/accounts/login.html:25
+msgid "OR"
+msgstr "或"
+
+#: templates/accounts/login.html:42
+msgid "Sign in as Customer"
+msgstr "作为顾客登录"
+
+#: templates/accounts/login.html:52 templates/accounts/login.html:68
+#: templates/accounts/register_customer.html:190
+msgid "Continue with Google"
+msgstr "使用 Google 继续"
+
+#: templates/accounts/login.html:58
+msgid "Sign in as Shop Owner"
+msgstr "作为商家登录"
+
+#: templates/accounts/login.html:77
+#, python-format
+msgid ""
+"No account? <a class=\"text-orange-600 underline\" "
+"href=\"%(reg_cust_url)s\">Sign up as a customer</a> or <a class=\"text-"
+"orange-600 underline\" href=\"%(reg_owner_url)s\">register your store</a>."
+msgstr ""
+"还没有账号？<a class=\"text-orange-600 underline\" href=\"%(reg_cust_url)s\">"
+"注册成为顾客</a> 或 <a class=\"text-orange-600 underline\" "
+"href=\"%(reg_owner_url)s\">注册您的店铺</a>。"
+
+#: templates/accounts/profile.html:4 templates/accounts/profile.html:15
+#: templates/base.html:59
+msgid "My Profile"
+msgstr "个人中心"
+
+#: templates/accounts/profile.html:16
+msgid "Manage your account and addresses"
+msgstr "管理您的个人账号与收货地址"
+
+#: templates/accounts/profile.html:22
+msgid "Personal Information"
+msgstr "个人信息"
+
+#: templates/accounts/profile.html:34 templates/orders/order_edit.html:23
+#: templates/stores/category_edit.html:19 templates/stores/store_form.html:157
+msgid "Save Changes"
+msgstr "保存修改"
+
+#: templates/accounts/profile.html:41
+msgid "Username"
+msgstr "用户名"
+
+#: templates/accounts/profile.html:43
+msgid "Login with username OR email"
+msgstr "使用用户名或邮箱登录"
+
+#: templates/accounts/profile.html:52
+msgid "Change your password regularly"
+msgstr "请定期修改您的密码"
+
+#: templates/accounts/profile.html:63
+msgid "Saved Addresses"
+msgstr "已保存的地址"
+
+#: templates/accounts/profile.html:66
+msgid "Add New"
+msgstr "新增"
+
+#: templates/accounts/profile.html:73
+msgid "Add New Address"
+msgstr "添加新地址"
+
+#: templates/accounts/profile.html:85
+msgid "Add Address"
+msgstr "添加地址"
+
+#: templates/accounts/profile.html:98
+msgid "Default"
+msgstr "默认"
+
+#: templates/accounts/profile.html:102 templates/stores/store_detail.html:17
+#: templates/stores/store_list.html:67 templates/stores/store_list.html:127
+msgid "Pincode:"
+msgstr "邮政编码："
+
+#: templates/accounts/profile.html:103 templates/orders/order_detail.html:48
+msgid "Phone:"
+msgstr "电话："
+
+#: templates/accounts/profile.html:109 templates/orders/order_list.html:113
+#: templates/stores/category_list.html:32 templates/stores/item_list.html:83
+msgid "Edit"
+msgstr "编辑"
+
+#: templates/accounts/profile.html:111
+msgid "Delete this address?"
+msgstr "确认删除此地址？"
+
+#: templates/accounts/profile.html:115 templates/stores/category_list.html:39
+#: templates/stores/item_list.html:88
+msgid "Delete"
+msgstr "删除"
+
+#: templates/accounts/profile.html:122
+msgid "No saved addresses yet."
+msgstr "暂无保存的地址。"
+
+#: templates/accounts/profile.html:124
+msgid "Add your first address"
+msgstr "添加您的首个地址"
+
+#: templates/accounts/profile.html:134
+msgid "View My Orders"
+msgstr "查看我的订单"
+
+#: templates/accounts/register_customer.html:4 templates/base.html:89
+msgid "Customer Sign Up"
+msgstr "顾客注册"
+
+#: templates/accounts/register_customer.html:15
+msgid "Create Your Account"
+msgstr "创建您的账号"
+
+#: templates/accounts/register_customer.html:16
+msgid "Join to save addresses and track orders"
+msgstr "注册以保存地址并追踪订单"
+
+#: templates/accounts/register_customer.html:125
+msgid "Password Requirements"
+msgstr "密码要求"
+
+#: templates/accounts/register_customer.html:130
+msgid "At least 9 characters long"
+msgstr "至少包含 9 个字符"
+
+#: templates/accounts/register_customer.html:134
+msgid "Not too similar to your name or email"
+msgstr "不能与您的姓名或邮箱过于相似"
+
+#: templates/accounts/register_customer.html:138
+msgid "Not a commonly used password (e.g. \"password123\")"
+msgstr "不能是常用密码（例如 \"password123\"）"
+
+#: templates/accounts/register_customer.html:142
+msgid "Not entirely numeric"
+msgstr "不能全为纯数字"
+
+#: templates/accounts/register_customer.html:148
+msgid "Create Account"
+msgstr "注册账号"
+
+#: templates/accounts/register_customer.html:155
+#: templates/accounts/register_owner.html:41
+msgid "or"
+msgstr "或"
+
+#: templates/accounts/register_customer.html:195
+msgid "Already have an account?"
+msgstr "已有账号？"
+
+#: templates/accounts/register_customer.html:201
+msgid "Log in"
+msgstr "登录"
+
+#: templates/accounts/register_owner.html:4
+msgid "Register Your Stall"
+msgstr "注册您的摊位"
+
+#: templates/accounts/register_owner.html:10
+msgid "Register Your Food Stall"
+msgstr "注册您的餐饮摊位"
+
+#: templates/accounts/register_owner.html:32
+msgid "Create Owner Account"
+msgstr "创建商家账号"
+
+#: templates/accounts/register_owner.html:80
+msgid "Continue with Google as Shop Owner"
+msgstr "以商家身份使用 Google 继续"
+
+#: templates/allauth/layouts/base.html:23
+msgid "Back to site"
+msgstr "返回网站"
+
+#: templates/allauth/layouts/base.html:52 templates/base.html:114
+msgid "All rights reserved."
+msgstr "保留所有权利。"
+
+#: templates/analytics/dashboard.html:3 templates/base.html:75
+#: templates/stores/owner_dashboard.html:13
+msgid "Analytics"
+msgstr "数据分析"
+
+#: templates/analytics/dashboard.html:10
+msgid "Sales Analytics"
+msgstr "销售分析"
+
+#: templates/analytics/dashboard.html:13
+msgid "Daily"
+msgstr "按日"
+
+#: templates/analytics/dashboard.html:14
+msgid "Weekly"
+msgstr "按周"
+
+#: templates/analytics/dashboard.html:15
+msgid "Monthly"
+msgstr "按月"
+
+#: templates/analytics/dashboard.html:22
+msgid "Total Revenue (period)"
+msgstr "总收入（当前周期）"
+
+#: templates/analytics/dashboard.html:26
+msgid "Completed Orders"
+msgstr "已完成订单"
+
+#: templates/analytics/dashboard.html:33
+msgid "Sales Over Time"
+msgstr "销售趋势"
+
+#: templates/analytics/dashboard.html:37
+msgid "Category-wise Sales"
+msgstr "按分类销售额"
+
+#: templates/analytics/dashboard.html:43
+msgid "Item-wise Sales"
+msgstr "按商品销售额"
+
+#: templates/analytics/dashboard.html:48
+msgid "Top Items"
+msgstr "热销商品"
+
+#: templates/analytics/dashboard.html:52
+#: templates/orders/order_create_manual.html:73
+#: templates/orders/order_detail.html:167
+msgid "Item"
+msgstr "商品"
+
+#: templates/analytics/dashboard.html:53
+msgid "Qty Sold"
+msgstr "销量"
+
+#: templates/analytics/dashboard.html:54 templates/analytics/dashboard.html:81
+msgid "Revenue"
+msgstr "收入"
+
+#: templates/analytics/dashboard.html:65
+msgid "No completed sales in this period yet."
+msgstr "在此期间尚无已完成的销售。"
+
+#: templates/analytics/dashboard.html:85
+msgid "Revenue by Item"
+msgstr "按商品收入统计"
+
+#: templates/base.html:28
+msgid "Select language"
+msgstr "选择语言"
+
+#: templates/base.html:45
+msgid "Info"
+msgstr ""
+
+#: templates/base.html:47 templates/orders/order_confirmation.html:15
+msgid "Track Order"
+msgstr "追踪订单"
+
+#: templates/base.html:48 templates/stores/contact_us.html:4
+#: templates/stores/contact_us.html:8 templates/stores/landing.html:28
+msgid "Contact Us"
+msgstr "联系我们"
+
+#: templates/base.html:52 templates/base.html:66
+#: templates/stores/notifications.html:4 templates/stores/notifications.html:9
+msgid "Notifications"
+msgstr "通知"
+
+#: templates/base.html:60 templates/orders/my_orders.html:3
+#: templates/orders/my_orders.html:9
+msgid "My Orders"
+msgstr "我的订单"
+
+#: templates/base.html:73 templates/stores/owner_dashboard.html:3
+msgid "My Store"
+msgstr "我的店铺"
+
+#: templates/base.html:74 templates/orders/order_list.html:3
+#: templates/orders/order_list.html:19 templates/stores/owner_dashboard.html:12
+msgid "Orders"
+msgstr "订单"
+
+#: templates/base.html:79 templates/platform_admin/dashboard.html:3
+msgid "Platform Admin"
+msgstr "平台管理"
+
+#: templates/base.html:82
+msgid "Hi"
+msgstr ""
+
+#: templates/base.html:90 templates/stores/landing.html:24
+msgid "Register Your Store"
+msgstr "注册您的店铺"
+
+#: templates/orders/checkout.html:3 templates/orders/checkout.html:5
+msgid "Checkout"
+msgstr "结账"
+
+#: templates/orders/checkout.html:8
+msgid "Your Cart"
+msgstr "您的购物车"
+
+#: templates/orders/checkout.html:22
+msgid "tax"
+msgstr "税费"
+
+#: templates/orders/checkout.html:24
+msgid "incl. tax"
+msgstr "含税"
+
+#: templates/orders/checkout.html:28
+msgid "Tax:"
+msgstr "税费："
+
+#: templates/orders/checkout.html:34
+msgid "base:"
+msgstr "不含税底价："
+
+#: templates/orders/checkout.html:40
+#: templates/orders/order_create_manual.html:89
+#: templates/orders/order_detail.html:146
+msgid "Remove"
+msgstr "移除"
+
+#: templates/orders/checkout.html:47
+msgid "Subtotal (base prices)"
+msgstr "小计（底价）"
+
+#: templates/orders/checkout.html:49 templates/orders/order_detail.html:79
+msgid "Tax"
+msgstr "税费"
+
+#: templates/orders/checkout.html:51
+msgid "Total (incl. tax)"
+msgstr "总计（含税）"
+
+#: templates/orders/checkout.html:61
+msgid "Select a saved address"
+msgstr "选择已保存的地址"
+
+#: templates/orders/checkout.html:64
+msgid "Enter manually"
+msgstr "手动输入"
+
+#: templates/orders/checkout.html:89
+msgid "Place Order"
+msgstr "提交订单"
+
+#: templates/orders/my_orders.html:10
+msgid "Track and manage your past orders"
+msgstr "追踪并管理您历史订单"
+
+#: templates/orders/my_orders.html:41 templates/orders/order_detail.html:113
+msgid "Items"
+msgstr "商品列表"
+
+#: templates/orders/my_orders.html:56
+msgid "View Details"
+msgstr "查看详情"
+
+#: templates/orders/my_orders.html:60 templates/orders/order_detail.html:25
+msgid "Download Bill"
+msgstr "下载账单"
+
+#: templates/orders/my_orders.html:69
+msgid "You haven't placed any orders yet."
+msgstr "您尚未下过任何订单。"
+
+#: templates/orders/order_confirmation.html:3
+msgid "Order Confirmed"
+msgstr "订单已确认"
+
+#: templates/orders/order_confirmation.html:6
+msgid "Order Placed! ✅"
+msgstr "下单成功！ ✅"
+
+#: templates/orders/order_confirmation.html:7
+msgid "Your order number is"
+msgstr "您的订单号是"
+
+#: templates/orders/order_confirmation.html:9
+#: templates/orders/track_order.html:26
+msgid "Status:"
+msgstr "状态："
+
+#: templates/orders/order_confirmation.html:10
+#: templates/orders/track_order.html:28
+msgid "Total:"
+msgstr "总计："
+
+#: templates/orders/order_confirmation.html:11
+msgid "Save your order number to track your order or download your bill later."
+msgstr "请保存您的订单号，以便后续追踪订单状态或下载账单。"
+
+#: templates/orders/order_confirmation.html:13
+msgid "Back to Menu"
+msgstr "返回菜单"
+
+#: templates/orders/order_confirmation.html:14
+#: templates/orders/track_order.html:47
+msgid "Download Bill (PDF)"
+msgstr "下载账单 (PDF)"
+
+#: templates/orders/order_create_manual.html:3
+#: templates/orders/order_create_manual.html:7
+#: templates/orders/order_create_manual.html:33
+#: templates/orders/order_list.html:21
+msgid "Create Order"
+msgstr "创建订单"
+
+#: templates/orders/order_create_manual.html:14
+msgid "Add Items"
+msgstr "添加商品"
+
+#: templates/orders/order_create_manual.html:18
+msgid "Add Another Item"
+msgstr "添加另一件商品"
+
+#: templates/orders/order_create_manual.html:23
+#: templates/orders/order_detail.html:41 templates/orders/order_edit.html:12
+msgid "Customer Information"
+msgstr "顾客信息"
+
+#: templates/orders/order_create_manual.html:62
+#: templates/orders/order_detail.html:160 templates/stores/item_list.html:53
+msgid "Category"
+msgstr "分类"
+
+#: templates/orders/order_create_manual.html:64
+#: templates/orders/order_detail.html:163
+msgid "Select category..."
+msgstr "选择分类..."
+
+#: templates/orders/order_create_manual.html:75
+#: templates/orders/order_create_manual.html:106
+#: templates/orders/order_detail.html:169
+#: templates/orders/order_detail.html:224
+msgid "Select category first..."
+msgstr "请先选择分类..."
+
+#: templates/orders/order_create_manual.html:82
+#: templates/orders/order_detail.html:173
+msgid "Qty"
+msgstr "数量"
+
+#: templates/orders/order_create_manual.html:112
+#: templates/orders/order_detail.html:229
+msgid "Select item..."
+msgstr "选择商品..."
+
+#: templates/orders/order_detail.html:3 templates/orders/order_detail.html:9
+msgid "Order"
+msgstr "订单"
+
+#: templates/orders/order_detail.html:21
+msgid "Edit Details"
+msgstr "编辑详情"
+
+#: templates/orders/order_detail.html:27
+msgid "Delete this order permanently?"
+msgstr "永久删除此订单？"
+
+#: templates/orders/order_detail.html:31
+msgid "Delete Order"
+msgstr "删除订单"
+
+#: templates/orders/order_detail.html:44
+msgid "Name:"
+msgstr "姓名："
+
+#: templates/orders/order_detail.html:52
+msgid "Email:"
+msgstr "邮箱："
+
+#: templates/orders/order_detail.html:56
+msgid "Table:"
+msgstr "桌号："
+
+#: templates/orders/order_detail.html:60
+msgid "Address:"
+msgstr "地址："
+
+#: templates/orders/order_detail.html:64
+msgid "Remarks:"
+msgstr "备注："
+
+#: templates/orders/order_detail.html:72
+msgid "Order Summary"
+msgstr "订单摘要"
+
+#: templates/orders/order_detail.html:75
+msgid "Subtotal"
+msgstr "小计"
+
+#: templates/orders/order_detail.html:83
+msgid "Grand Total"
+msgstr "总计"
+
+#: templates/orders/order_detail.html:92
+msgid "Update Status"
+msgstr "更新状态"
+
+#: templates/orders/order_detail.html:97
+msgid "Confirm Order Received"
+msgstr "确认已接单"
+
+#: templates/orders/order_detail.html:107
+msgid "Set Status"
+msgstr "设置状态"
+
+#: templates/orders/order_detail.html:122
+#, python-format
+msgid "Tax: %(tax_pct)s%% = %(tax_amt)s (base: %(base_amt)s)"
+msgstr "税费: %(tax_pct)s%% = %(tax_amt)s (底价: %(base_amt)s)"
+
+#: templates/orders/order_detail.html:125
+msgid "incl. tax (price is final)"
+msgstr "含税（最终结算价）"
+
+#: templates/orders/order_detail.html:134
+msgid "Qty:"
+msgstr "数量："
+
+#: templates/orders/order_detail.html:139
+msgid "Update"
+msgstr "更新"
+
+#: templates/orders/order_detail.html:142
+msgid "Remove this item?"
+msgstr "移除此商品？"
+
+#: templates/orders/order_detail.html:156
+msgid "Add Item to Order"
+msgstr "向订单中添加商品"
+
+#: templates/orders/order_detail.html:177
+#: templates/stores/category_list.html:20
+msgid "Add"
+msgstr "添加"
+
+#: templates/orders/order_detail.html:186
+msgid "Merged Orders"
+msgstr "合并订单"
+
+#: templates/orders/order_edit.html:3 templates/orders/order_edit.html:7
+msgid "Edit Order"
+msgstr "编辑订单"
+
+#: templates/orders/order_list.html:22 templates/orders/order_merge.html:4
+#: templates/orders/order_merge.html:7
+msgid "Merge Orders"
+msgstr "合并订单"
+
+#: templates/orders/order_list.html:30
+msgid "Order Number"
+msgstr "订单编号"
+
+#: templates/orders/order_list.html:31
+msgid "e.g. ORD-ABC123"
+msgstr "例：ORD-ABC123"
+
+#: templates/orders/order_list.html:36
+msgid "Customer Name"
+msgstr "顾客姓名"
+
+#: templates/orders/order_list.html:37
+msgid "Customer name..."
+msgstr "顾客姓名..."
+
+#: templates/orders/order_list.html:42
+msgid "Customer Phone"
+msgstr "顾客电话"
+
+#: templates/orders/order_list.html:43
+msgid "Phone number..."
+msgstr "电话号码..."
+
+#: templates/orders/order_list.html:48 templates/orders/order_list.html:97
+#: templates/stores/owner_dashboard.html:25
+#: templates/stores/owner_dashboard.html:46
+msgid "Status"
+msgstr "状态"
+
+#: templates/orders/order_list.html:50
+msgid "All statuses"
+msgstr "所有状态"
+
+#: templates/orders/order_list.html:58
+msgid "From date"
+msgstr "起始日期"
+
+#: templates/orders/order_list.html:63
+msgid "To date"
+msgstr "截止日期"
+
+#: templates/orders/order_list.html:68
+msgid "Min total"
+msgstr "最低金额"
+
+#: templates/orders/order_list.html:74
+msgid "Max total"
+msgstr "最高金额"
+
+#: templates/orders/order_list.html:80
+msgid "Sort by"
+msgstr "排序方式"
+
+#: templates/orders/order_list.html:89 templates/stores/item_list.html:39
+msgid "Apply Filters"
+msgstr "应用筛选"
+
+#: templates/orders/order_list.html:90 templates/stores/item_list.html:41
+#: templates/stores/store_detail.html:54
+msgid "Clear"
+msgstr "清除"
+
+#: templates/orders/order_list.html:97 templates/stores/owner_dashboard.html:45
+msgid "Order #"
+msgstr "订单号"
+
+#: templates/orders/order_list.html:97
+msgid "Customer"
+msgstr "顾客"
+
+#: templates/orders/order_list.html:97 templates/stores/contact_us.html:38
+msgid "Phone"
+msgstr "电话"
+
+#: templates/orders/order_list.html:97 templates/stores/contact_us.html:50
+msgid "Address"
+msgstr "地址"
+
+#: templates/orders/order_list.html:97 templates/stores/owner_dashboard.html:47
+msgid "Total"
+msgstr "总计"
+
+#: templates/orders/order_list.html:97 templates/stores/owner_dashboard.html:48
+msgid "Placed"
+msgstr "下单时间"
+
+#: templates/orders/order_list.html:97 templates/stores/item_list.html:59
+msgid "Actions"
+msgstr "操作"
+
+#: templates/orders/order_list.html:104
+msgid "Merged"
+msgstr "已合并"
+
+#: templates/orders/order_list.html:115
+msgid "Bill"
+msgstr "账单"
+
+#: templates/orders/order_list.html:119
+msgid "No orders match these filters."
+msgstr "没有符合条件的订单。"
+
+#: templates/orders/order_merge.html:19
+msgid "Merge Selected Orders"
+msgstr "合并所选订单"
+
+#: templates/orders/track_order.html:3 templates/orders/track_order.html:7
+msgid "Track Your Order"
+msgstr "追踪您的订单"
+
+#: templates/orders/track_order.html:18
+msgid "Check Status"
+msgstr "查询状态"
+
+#: templates/orders/track_order.html:25 templates/stores/store_list.html:65
+msgid "Store:"
+msgstr "店铺："
+
+#: templates/orders/track_order.html:27
+msgid "Placed:"
+msgstr "下单时间："
+
+#: templates/orders/track_order.html:32
+msgid "This order was cancelled."
+msgstr "此订单已被取消。"
+
+#: templates/orders/track_order.html:34
+msgid "Order status progress:"
+msgstr "订单状态进度："
+
+#: templates/platform_admin/dashboard.html:5
+msgid "Platform Admin Dashboard"
+msgstr "平台管理控制台"
+
+#: templates/platform_admin/dashboard.html:7
+msgid "Total Stores"
+msgstr "店铺总数"
+
+#: templates/platform_admin/dashboard.html:8
+msgid "Active Stores"
+msgstr "经营中店铺"
+
+#: templates/platform_admin/dashboard.html:9
+msgid "Customers"
+msgstr "顾客总数"
+
+#: templates/platform_admin/dashboard.html:10
+msgid "Owners"
+msgstr "商家总数"
+
+#: templates/platform_admin/dashboard.html:11
+msgid "Total Orders"
+msgstr "订单总数"
+
+#: templates/platform_admin/dashboard.html:14
+msgid "Recently Registered Stores"
+msgstr "最近注册的店铺"
+
+#: templates/platform_admin/dashboard.html:19
+msgid "Store"
+msgstr "店铺"
+
+#: templates/platform_admin/dashboard.html:20
+msgid "Owner"
+msgstr "店主"
+
+#: templates/platform_admin/dashboard.html:21
+msgid "Active"
+msgstr "状态"
+
+#: templates/platform_admin/dashboard.html:22
+msgid "Created"
+msgstr "创建时间"
+
+#: templates/platform_admin/dashboard.html:30
+#: templates/stores/item_list.html:79
+msgid "Yes"
+msgstr "是"
+
+#: templates/platform_admin/dashboard.html:30
+#: templates/stores/item_list.html:79
+msgid "No"
+msgstr "否"
+
+#: templates/platform_admin/dashboard.html:38
+msgid ""
+"For full user/role management, use the <a class=\"text-orange-600 "
+"underline\" href=\"/django-admin/\">Django admin</a>."
+msgstr ""
+"如需进行完整的用户/角色管理，请使用 <a class=\"text-orange-600 underline\" "
+"href=\"/django-admin/\">Django 管理后台</a>。"
+
+#: templates/stores/category_edit.html:4 templates/stores/category_edit.html:8
+msgid "Edit Category"
+msgstr "编辑分类"
+
+#: templates/stores/category_list.html:4 templates/stores/category_list.html:7
+#: templates/stores/owner_dashboard.html:10
+msgid "Categories"
+msgstr "分类列表"
+
+#: templates/stores/category_list.html:10
+msgid "Add Category"
+msgstr "添加分类"
+
+#: templates/stores/category_list.html:24
+msgid "Existing Categories"
+msgstr "已有分类"
+
+#: templates/stores/category_list.html:35
+msgid "Delete this category?"
+msgstr "确认删除此分类？"
+
+#: templates/stores/category_list.html:45
+msgid "No categories yet."
+msgstr "暂无分类。"
+
+#: templates/stores/contact_us.html:15
+msgid "Get in Touch"
+msgstr "取得联系"
+
+#: templates/stores/contact_us.html:17
+msgid ""
+"Have a complaint, concern, or question? Reach out to us using any of the "
+"methods below, or fill out the form and we'll get back to you."
+msgstr ""
+"有任何投诉、建议或疑问？您可以通过以下任何方式联系我们，或填写表单，我们会尽"
+"快回复您。"
+
+#: templates/stores/contact_us.html:26 templates/stores/contact_us.html:83
+msgid "Email"
+msgstr "电子邮箱"
+
+#: templates/stores/contact_us.html:57
+msgid "Response Time"
+msgstr "回复时间"
+
+#: templates/stores/contact_us.html:59
+msgid "We aim to respond to all complaints and concerns within 24–48 hours."
+msgstr "我们旨在 24–48 小时内处理并回复所有问题和建议。"
+
+#: templates/stores/contact_us.html:60
+msgid "For urgent matters, please call us directly."
+msgstr "如有紧急事项，请直接拨打电话联系我们。"
+
+#: templates/stores/contact_us.html:67
+msgid "Submit a Complaint or Concern"
+msgstr "提交投诉或建议"
+
+#: templates/stores/contact_us.html:74 templates/stores/item_list.html:52
+msgid "Name"
+msgstr "姓名"
+
+#: templates/stores/contact_us.html:74
+msgid "optional"
+msgstr "选填"
+
+#: templates/stores/contact_us.html:92
+msgid "Phone Number"
+msgstr "电话号码"
+
+#: templates/stores/contact_us.html:102
+msgid "Message"
+msgstr "留言内容"
+
+#: templates/stores/contact_us.html:103
+msgid "max 1000 characters"
+msgstr "最多 1000 个字符"
+
+#: templates/stores/contact_us.html:111
+msgid "characters"
+msgstr "字符"
+
+#: templates/stores/contact_us.html:115
+msgid "Submit"
+msgstr "提交"
+
+#: templates/stores/item_form.html:4 templates/stores/item_list.html:10
+msgid "Add Item"
+msgstr "添加商品"
+
+#: templates/stores/item_form.html:4
+msgid "Edit Item"
+msgstr "编辑商品"
+
+#: templates/stores/item_form.html:7
+msgid "Add Menu Item"
+msgstr "添加菜单项目"
+
+#: templates/stores/item_form.html:7
+msgid "Edit Menu Item"
+msgstr "编辑菜单项目"
+
+#: templates/stores/item_form.html:19
+msgid "Current file:"
+msgstr "当前文件："
+
+#: templates/stores/item_form.html:42
+msgid "Save Item"
+msgstr "保存商品"
+
+#: templates/stores/item_list.html:5 templates/stores/item_list.html:9
+#: templates/stores/owner_dashboard.html:11
+msgid "Menu Items"
+msgstr "菜单商品"
+
+#: templates/stores/item_list.html:17
+msgid "Search by Item Name"
+msgstr "按商品名称搜索"
+
+#: templates/stores/item_list.html:19
+msgid "Item name..."
+msgstr "商品名称..."
+
+#: templates/stores/item_list.html:23
+msgid "Search by Code"
+msgstr "按商品代码搜索"
+
+#: templates/stores/item_list.html:25
+msgid "Item code..."
+msgstr "商品代码..."
+
+#: templates/stores/item_list.html:29
+msgid "Filter by Category"
+msgstr "按分类筛选"
+
+#: templates/stores/item_list.html:31
+msgid "All categories"
+msgstr "全部分类"
+
+#: templates/stores/item_list.html:51
+msgid "Code"
+msgstr "代码"
+
+#: templates/stores/item_list.html:54
+msgid "Price"
+msgstr "价格"
+
+#: templates/stores/item_list.html:55
+#, python-format
+msgid "Tax %%"
+msgstr "税率 %%"
+
+#: templates/stores/item_list.html:56
+msgid "Stock"
+msgstr "库存"
+
+#: templates/stores/item_list.html:57
+msgid "Min Stock"
+msgstr "最低库存"
+
+#: templates/stores/item_list.html:58
+msgid "Available"
+msgstr "在售"
+
+#: templates/stores/item_list.html:73
+msgid "Low"
+msgstr "偏低"
+
+#: templates/stores/item_list.html:86
+msgid "Delete this item?"
+msgstr "确认删除此商品？"
+
+#: templates/stores/item_list.html:95
+msgid "No items found."
+msgstr "未找到任何商品。"
+
+#: templates/stores/item_list.html:97
+msgid "Clear filters"
+msgstr "清除筛选条件"
+
+#: templates/stores/item_list.html:111 templates/stores/store_list.html:142
+msgid "Prev"
+msgstr "上一页"
+
+#: templates/stores/item_list.html:114
+#, python-format
+msgid "Page %(current_page)s of %(num_pages)s"
+msgstr "第 %(current_page)s 页 / 共 %(num_pages)s 页"
+
+#: templates/stores/item_list.html:118 templates/stores/store_list.html:145
+msgid "Next"
+msgstr "下一页"
+
+#: templates/stores/landing.html:4
+msgid "Your Local Stores, Online"
+msgstr "您的本地线上商店"
+
+#: templates/stores/landing.html:10
+msgid "A simple way to shop and sell online"
+msgstr "更轻松的在线购物与销售平台"
+
+#: templates/stores/landing.html:13
+msgid "Bring your shop closer to your customers."
+msgstr "拉近您的店铺与顾客之间的距离。"
+
+#: templates/stores/landing.html:16
+msgid ""
+"\n"
+"        Taliawale helps local shop owners show their products online and "
+"receive orders.\n"
+"        Customers can discover nearby stores, choose what they need, and "
+"order with ease.\n"
+"        "
+msgstr ""
+"\n"
+"        Taliawale 帮助本地店家在线展示商品并接收订单。\n"
+"        顾客可以轻松探索附近店铺、选择心仪商品并在线下单。\n"
+"        "
+
+#: templates/stores/landing.html:32
+msgid "Check Other Stores"
+msgstr "查看其他店铺"
+
+#: templates/stores/landing.html:38
+msgid "A shop owner showing products through an online store"
+msgstr "通过网店展示商品的店家"
+
+#: templates/stores/landing.html:45
+msgid "What is Taliawale?"
+msgstr "什么是 Taliawale？"
+
+#: templates/stores/landing.html:47
+msgid ""
+"\n"
+"    Taliawale is an online marketplace for local shops and their customers.\n"
+"    It gives store owners a simple place to present their shop, list their "
+"products,\n"
+"    manage orders, and connect with customers. For customers, it makes it "
+"easier to\n"
+"    find stores, browse products, place orders, and keep track of them.\n"
+"    "
+msgstr ""
+"\n"
+"    Taliawale 是一个服务于本地店铺及其顾客的在线市场。\n"
+"    它为店主提供了一个便捷的平台来展示店铺、列出商品、\n"
+"    管理订单并与顾客建立联系。对于顾客而言，它可以更方便地\n"
+"    查找店铺、浏览商品、下单并跟踪订单状态。\n"
+"    "
+
+#: templates/stores/landing.html:58
+msgid "For Store Owners"
+msgstr "面向店家"
+
+#: templates/stores/landing.html:60
+msgid ""
+"\n"
+"      Create your store, add your products, share your store link, and "
+"receive orders\n"
+"      from customers. You can keep your information and orders organized in "
+"one place.\n"
+"      "
+msgstr ""
+"\n"
+"      创建您的店铺、添加商品、分享店铺链接并接收顾客订单。\n"
+"      您可以在一个地方管理所有店铺信息与订单。\n"
+"      "
+
+#: templates/stores/landing.html:67
+msgid "For Customers"
+msgstr "面向顾客"
+
+#: templates/stores/landing.html:69
+msgid ""
+"\n"
+"      Check stores, browse available products, place an order, and follow "
+"its progress.\n"
+"      You can also contact us if you need help using the platform.\n"
+"      "
+msgstr ""
+"\n"
+"      查看店铺、浏览选购商品、提交订单并跟踪进度。\n"
+"      如果您在平台使用过程中需要帮助，也可以随时联系我们。\n"
+"      "
+
+#: templates/stores/notifications.html:13
+msgid "Mark all as read"
+msgstr "全部标记为已读"
+
+#: templates/stores/notifications.html:33
+msgid "Mark read"
+msgstr "标为已读"
+
+#: templates/stores/notifications.html:38
+msgid "No notifications yet."
+msgstr "暂无通知。"
+
+#: templates/stores/operating_hours_form.html:4
+#: templates/stores/operating_hours_form.html:7
+msgid "Operating Hours"
+msgstr "营业时间"
+
+#: templates/stores/operating_hours_form.html:9
+msgid "Timezone:"
+msgstr "时区："
+
+#: templates/stores/operating_hours_form.html:11
+#, python-format
+msgid ""
+"Your store's open/closed status updates automatically based on these hours.\n"
+"    To change your timezone, go to <a href=\"%(edit_store_url)s\" "
+"class=\"underline\">Edit Store</a>."
+msgstr ""
+"您的店铺营业状态会根据这些时间自动更新。\n"
+"    如需更改时区，请前往 <a href=\"%(edit_store_url)s\" class=\"underline\">"
+"编辑店铺</a>。"
+
+#: templates/stores/operating_hours_form.html:17
+msgid ""
+"Set your opening and closing time for each day, or check 'Closed all day' "
+"for days you don't operate."
+msgstr "设置每天的开门和打烊时间，如果某天休息不营业，请勾选“全天休息”。"
+
+#: templates/stores/operating_hours_form.html:31
+msgid "Opens"
+msgstr "开门时间"
+
+#: templates/stores/operating_hours_form.html:37
+msgid "Closes"
+msgstr "打烊时间"
+
+#: templates/stores/operating_hours_form.html:44
+msgid "Closed all day"
+msgstr "全天休息"
+
+#: templates/stores/operating_hours_form.html:51
+msgid "Save Hours"
+msgstr "保存营业时间"
+
+#: templates/stores/owner_dashboard.html:8 templates/stores/store_form.html:4
+#: templates/stores/store_form.html:14
+msgid "Edit Store"
+msgstr "编辑店铺"
+
+#: templates/stores/owner_dashboard.html:9
+msgid "Hours"
+msgstr "营业时间"
+
+#: templates/stores/owner_dashboard.html:17
+msgid "Deactivate"
+msgstr "停用"
+
+#: templates/stores/owner_dashboard.html:17
+msgid "Activate"
+msgstr "启用"
+
+#: templates/stores/owner_dashboard.html:27
+msgid "Open"
+msgstr "营业中"
+
+#: templates/stores/owner_dashboard.html:27
+#: templates/stores/store_detail.html:19 templates/stores/store_list.html:129
+msgid "Closed"
+msgstr "休息中"
+
+#: templates/stores/owner_dashboard.html:31
+msgid "Low Stock Items"
+msgstr "库存偏低商品"
+
+#: templates/stores/owner_dashboard.html:35
+msgid "QR Code"
+msgstr "二维码"
+
+#: templates/stores/owner_dashboard.html:40
+msgid "Recent Orders"
+msgstr "近期订单"
+
+#: templates/stores/owner_dashboard.html:60
+msgid "No orders yet."
+msgstr "暂无订单。"
+
+#: templates/stores/store_detail.html:19 templates/stores/store_list.html:129
+msgid "Open now"
+msgstr "正在营业"
+
+#: templates/stores/store_detail.html:24
+msgid "QR code"
+msgstr "二维码"
+
+#: templates/stores/store_detail.html:25
+msgid "Scan to reorder"
+msgstr "扫码再次下单"
+
+#: templates/stores/store_detail.html:29
+msgid "Share Store"
+msgstr "分享店铺"
+
+#: templates/stores/store_detail.html:33
+msgid "Download QR"
+msgstr "下载二维码"
+
+#: templates/stores/store_detail.html:42
+msgid ""
+"This stall is currently closed. You can browse the menu but cannot place an "
+"order right now."
+msgstr "该摊位目前已暂停营业。您可以浏览菜单，但暂无法下单。"
+
+#: templates/stores/store_detail.html:49
+msgid "Search items in this store..."
+msgstr "搜索本店商品..."
+
+#: templates/stores/store_detail.html:52
+msgid "Search"
+msgstr "搜索"
+
+#: templates/stores/store_detail.html:86 templates/stores/store_detail.html:275
+msgid "items"
+msgstr "件商品"
+
+#: templates/stores/store_detail.html:104
+msgid "Code:"
+msgstr "编码："
+
+#: templates/stores/store_detail.html:124
+msgid "Add to Cart"
+msgstr "加入购物车"
+
+#: templates/stores/store_detail.html:129
+msgid "Out of stock"
+msgstr "缺货"
+
+#: templates/stores/store_detail.html:133
+msgid "No items match your search in this category."
+msgstr "该分类下未找到符合搜索条件的商品。"
+
+#: templates/stores/store_detail.html:141
+#, python-format
+msgid ""
+"\n"
+"              +%(hidden_count)s more in %(cat_name)s — See all &raquo;\n"
+"            "
+msgstr ""
+"\n"
+"              在 %(cat_name)s 中还有 +%(hidden_count)s 件商品 — 查看全部 "
+"&raquo;\n"
+"            "
+
+#: templates/stores/store_detail.html:152
+msgid "Show less"
+msgstr "收起"
+
+#: templates/stores/store_detail.html:161 templates/stores/store_list.html:94
+#, python-format
+msgid "No items found matching \"%(search)s\"."
+msgstr "未找到包含 \"%(search)s\" 的商品。"
+
+#: templates/stores/store_detail.html:163
+msgid "This store hasn't added any menu items yet."
+msgstr "该店铺尚未添加任何菜单商品。"
+
+#: templates/stores/store_detail.html:177
+#, python-format
+msgid ""
+"\n"
+"            %(counter)s item in cart\n"
+"          "
+msgid_plural ""
+"\n"
+"            %(counter)s items in cart\n"
+"          "
+msgstr[0] ""
+"\n"
+"            购物车中有 %(counter)s 件商品\n"
+"          "
+
+#: templates/stores/store_detail.html:183
+msgid "Cart is empty"
+msgstr "购物车是空的"
+
+#: templates/stores/store_detail.html:188
+#: templates/stores/store_detail.html:271
+msgid "Go to Checkout"
+msgstr "去结算"
+
+#: templates/stores/store_detail.html:195
+msgid "Added to cart!"
+msgstr "已加入购物车！"
+
+#: templates/stores/store_detail.html:204
+msgid "Check out"
+msgstr "在 YourTrolley 上"
+
+#: templates/stores/store_detail.html:204
+msgid "on YourTrolley!"
+msgstr "选购商品！"
+
+#: templates/stores/store_detail.html:212
+msgid "Store link copied to clipboard!"
+msgstr "店铺链接已复制到剪贴板！"
+
+#: templates/stores/store_detail.html:243
+msgid "Adding..."
+msgstr "添加中..."
+
+#: templates/stores/store_detail.html:256
+msgid "Could not add item."
+msgstr "无法添加商品。"
+
+#: templates/stores/store_detail.html:264
+msgid "added to cart!"
+msgstr "已加入购物车！"
+
+#: templates/stores/store_detail.html:275
+msgid "item"
+msgstr "件商品"
+
+#: templates/stores/store_detail.html:276
+msgid "in cart"
+msgstr "在购物车中"
+
+#: templates/stores/store_detail.html:279
+msgid "Could not add item. Please try again."
+msgstr "无法添加商品，请重试。"
+
+#: templates/stores/store_detail.html:284
+msgid "Could not add item:"
+msgstr "无法添加商品："
+
+#: templates/stores/store_detail.html:284
+msgid "Network error. Please refresh and try again."
+msgstr "网络错误，请刷新后重试。"
+
+#: templates/stores/store_form.html:4 templates/stores/store_form.html:157
+msgid "Create Store"
+msgstr "创建店铺"
+
+#: templates/stores/store_form.html:14
+msgid "Create Your Store"
+msgstr "创建您的店铺"
+
+#: templates/stores/store_form.html:15
+msgid "Set up your stall to start selling"
+msgstr "设置您的摊位，开始在线销售"
+
+#: templates/stores/store_form.html:15
+msgid "Update your store details"
+msgstr "更新您的店铺详情"
+
+#: templates/stores/store_form.html:24
+msgid "Basic Information"
+msgstr "基本信息"
+
+#: templates/stores/store_form.html:41
+msgid "Location & Contact"
+msgstr "位置与联系方式"
+
+#: templates/stores/store_form.html:58
+msgid "Store Picture"
+msgstr "店铺图片"
+
+#: templates/stores/store_form.html:68
+msgid "Store preview"
+msgstr "店铺预览"
+
+#: templates/stores/store_form.html:75 templates/stores/store_form.html:119
+msgid "Choose Image"
+msgstr "选择图片"
+
+#: templates/stores/store_form.html:90
+msgid "Currency Settings"
+msgstr "货币设置"
+
+#: templates/stores/store_form.html:112
+msgid "Icon preview"
+msgstr "图标预览"
+
+#: templates/stores/store_form.html:130
+msgid ""
+"Custom symbol / icon fields only apply when Currency is set to \"Custom\"."
+msgstr "自定义符号/图标字段仅在货币设置为“自定义”时生效。"
+
+#: templates/stores/store_form.html:135
+msgid "Checkout Settings"
+msgstr "结账设置"
+
+#: templates/stores/store_form.html:136
+msgid "Choose which fields customers must fill at checkout."
+msgstr "选择顾客在结账时必须填写的字段。"
+
+#: templates/stores/store_list.html:4 templates/stores/store_list.html:8
+msgid "Browse Stores & Items"
+msgstr "浏览店铺与商品"
+
+#: templates/stores/store_list.html:17
+msgid "Search by Item"
+msgstr "按商品搜索"
+
+#: templates/stores/store_list.html:19
+msgid "e.g. Burger, Coffee..."
+msgstr "例如：汉堡、咖啡..."
+
+#: templates/stores/store_list.html:25
+msgid "Search by Store Name"
+msgstr "按店铺名称搜索"
+
+#: templates/stores/store_list.html:27
+msgid "Stall name..."
+msgstr "店铺名称..."
+
+#: templates/stores/store_list.html:33
+msgid "Store Category"
+msgstr "店铺分类"
+
+#: templates/stores/store_list.html:35
+msgid "All store types"
+msgstr "所有店铺类型"
+
+#: templates/stores/store_list.html:46
+msgid "Filter by Pincode"
+msgstr "按邮政编码筛选"
+
+#: templates/stores/store_list.html:48
+msgid "e.g. 201301"
+msgstr "例如：100000"
+
+#: templates/stores/store_list.html:54
+msgid "Search & Filter"
+msgstr "搜索与筛选"
+
+#: templates/stores/store_list.html:56
+msgid "Clear Filters"
+msgstr "清除筛选"
+
+#: templates/stores/store_list.html:63
+msgid "Filtering by:"
+msgstr "筛选条件："
+
+#: templates/stores/store_list.html:64
+msgid "Item:"
+msgstr "商品："
+
+#: templates/stores/store_list.html:66
+msgid "Category:"
+msgstr "分类："
+
+#: templates/stores/store_list.html:74
+msgid "Matching Items"
+msgstr "匹配的商品"
+
+#: templates/stores/store_list.html:83
+msgid "No Image"
+msgstr "无图片"
+
+#: templates/stores/store_list.html:87
+msgid "From:"
+msgstr "来自："
+
+#: templates/stores/store_list.html:103
+msgid "Prev Items"
+msgstr "上一页商品"
+
+#: templates/stores/store_list.html:106
+msgid "Next Items"
+msgstr "下一页商品"
+
+#: templates/stores/store_list.html:113
+msgid "Available Stores"
+msgstr "营业中的店铺"
+
+#: templates/stores/store_list.html:113
+msgid "All Stores"
+msgstr "所有店铺"
+
+#: templates/stores/store_list.html:134
+msgid "No stalls found matching your filters."
+msgstr "未找到符合筛选条件的摊位。"
